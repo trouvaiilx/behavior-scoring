@@ -100,8 +100,9 @@ this shape:
 
 
 def _build_user_prompt(profile: CandidateProfileInput) -> str:
+    job_role_line = f"Target Job Role: {profile.job_role}\n" if profile.job_role else ""
     return f"""Candidate label (non-identifying, for reference only): {profile.candidate_label}
-
+{job_role_line}
 --- CV / resume claims to check consistency against ---
 {profile.cv_claims or "(none provided)"}
 
@@ -272,6 +273,7 @@ async def score_candidate(profile: CandidateProfileInput) -> ScoreResult:
 
     return ScoreResult(
         candidate_label=profile.candidate_label,
+        job_role=profile.job_role,
         rubric_version=RUBRIC_VERSION,
         rubric_hash=rubric_hash(),
         model_used=OLLAMA_MODEL,

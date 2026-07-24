@@ -1,6 +1,3 @@
-"""
-Pydantic models for API request/response validation.
-"""
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -8,6 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.config import MAX_FIELD_CHARS
 
 RedFlagStatus = Literal["pass", "review", "fail"]
+HumanReviewStatus = Literal["pending", "approved", "rejected", "overridden"]
 
 
 class CandidateProfileInput(BaseModel):
@@ -25,6 +23,11 @@ class CandidateProfileInput(BaseModel):
         min_length=1,
         max_length=200,
         description="Any non-identifying label for this run, e.g. 'sample_001'.",
+    )
+    job_role: str = Field(
+        default="",
+        max_length=200,
+        description="Optional target job role for context (e.g. 'Senior Software Engineer').",
     )
     cv_claims: str = Field(
         default="",
@@ -61,7 +64,7 @@ class CandidateProfileInput(BaseModel):
         return v
 
     @field_validator(
-        "cv_claims", "profile_about", "posts_sample", "comments_sample", "network_notes"
+        "job_role", "cv_claims", "profile_about", "posts_sample", "comments_sample", "network_notes"
     )
     @classmethod
     def _strip_text(cls, v: str) -> str:
@@ -80,11 +83,23 @@ class RedFlagResult(BaseModel):
     rationale: str
 
 
+class HumanReviewInfo(BaseModel):
+    status: HumanReviewStatus = "pending"
+    notes: str = ""
+    reviewed_at: Optional[str] = None
+
+
+class HumanReviewUpdate(BaseModel):
+    status: HumanReviewStatus
+    notes: str = Field(default="", max_length=1000)
+
+
 class ScoreResult(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
     id: Optional[int] = None
     candidate_label: str
+    job_role: str = ""
     rubric_version: str
     rubric_hash: str = Field(
         default="",
@@ -97,9 +112,52 @@ class ScoreResult(BaseModel):
     dimension_scores: list[DimensionScore]
     composite_score: float
     red_flag: RedFlagResult
+    human_review: HumanReviewInfo = Field(
+        default_factory=lambda: HumanReviewInfo(status="pending", notes="")
+    )
     excluded_attributes_detected: list[str] = Field(
         default_factory=list,
         description="Protected attributes the model noticed in the text but explicitly did NOT use to influence scoring.",
     )
     raw_model_output: str
     created_at: Optional[str] = None
+
+
+class AnalyticsSummaryResponse(BaseModel):
+    total_candidates: int
+    composite_score_stats: dict[str, float]
+    red_flag_breakdown: dict[str, int]
+    human_review_breakdown: dict[str, int]
+    excluded_attributes_counts: dict[str, int]
+    score_buckets: dict[str, int]
+
+
+class BatchScoreRequest(BaseModel):
+    profiles: list[CandidateProfileInput] = Field(
+        ..., min_length=1, max_length=20, description="List of candidate profiles to score."
+    )
+
+
+class BatchItemResult(BaseModel):
+    candidate_label: str
+    status: Literal["completed", "failed"]
+    score_result: Optional[ScoreResult] = None
+    error: Optional[str] = None
+
+
+class BatchJobStatusResponse(BaseModel):
+    batch_id: str
+    status: Literal["processing", "completed", "failed"]
+    total_items: int
+    completed_items: int
+    failed_items: int
+    results: list[BatchItemResult]
+
+
+class CandidateComparisonResponse(BaseModel):
+    candidates: list[ScoreResult]
+    dimension_averages: dict[str, float]
+    highest_scoring_candidate: Optional[str] = None
+    lowest_scoring_candidate: Optional[str] = None
+    red_flags_summary: dict[str, int]
+
