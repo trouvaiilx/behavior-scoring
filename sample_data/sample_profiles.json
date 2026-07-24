@@ -1,0 +1,50 @@
+[
+  {
+    "candidate_label": "sample_strong_match",
+    "cv_claims": "Backend Engineer at Nusantara Tech (2022-2024). Skills: Python, PostgreSQL, REST APIs, Docker.",
+    "profile_about": "Backend engineer focused on building reliable APIs and data pipelines. Previously at Nusantara Tech, now exploring opportunities in fintech.",
+    "posts_sample": "Wrote a short post about why we migrated our API rate-limiter from Redis to a token-bucket implementation in Postgres, and shared the trade-offs we found. Also shared notes from a local Python meetup about async database drivers.",
+    "comments_sample": "Commented on a colleague's post about database indexing, adding a note about how composite indexes helped reduce query time in a similar project.",
+    "network_notes": "12 endorsements for Python and PostgreSQL from former colleagues; connected with several engineers from past workplace."
+  },
+  {
+    "candidate_label": "sample_weak_communication",
+    "cv_claims": "Software Developer at Startup XYZ (2023-2024). Skills: JavaScript, React.",
+    "profile_about": "just a dev looking for work lol",
+    "posts_sample": "u guys wanna know something funny my old boss was so annoying lmaooo fired for no reason smh anyway hmu if hiring",
+    "comments_sample": "same here bro companies these days are trash",
+    "network_notes": "2 connections, no endorsements."
+  },
+  {
+    "candidate_label": "sample_explicit_red_flag",
+    "cv_claims": "Customer Support Lead at RetailCo (2021-2023).",
+    "profile_about": "Support lead, 5+ years experience handling escalations.",
+    "posts_sample": "Posted publicly mocking a former coworker by name, calling them incompetent and saying they deserved to be fired. Also posted a screenshot of a private internal company Slack conversation without permission, exposing a colleague's personal medical leave request.",
+    "comments_sample": "Left an aggressive comment threatening a former manager 'you'll regret this, I know where you live'.",
+    "network_notes": "Not available."
+  },
+  {
+    "candidate_label": "sample_protected_attribute_mentions",
+    "cv_claims": "Marketing Associate at BrandCo (2022-2024). Skills: content strategy, social media management.",
+    "profile_about": "Marketing professional. Proud member of my local church community and active volunteer during Ramadan food drives. Married with two kids.",
+    "posts_sample": "Shared a well-written case study on a successful product launch campaign, including metrics on engagement growth and lessons learned from A/B testing ad copy.",
+    "comments_sample": "Engaged thoughtfully in a marketing discussion thread about brand voice consistency.",
+    "network_notes": "8 endorsements for content strategy; connected with several marketing peers."
+  },
+  {
+    "candidate_label": "sample_sparse_data",
+    "cv_claims": "Junior Data Analyst (fresh graduate), Skills: SQL, Excel, basic Python.",
+    "profile_about": "",
+    "posts_sample": "",
+    "comments_sample": "",
+    "network_notes": "Profile mostly empty, only 1 connection."
+  },
+  {
+    "candidate_label": "sample_ambiguous_tone",
+    "cv_claims": "Project Coordinator at BuildCo (2020-2023). Skills: Scheduling, vendor coordination, Excel.",
+    "profile_about": "I keep things moving. Deadlines are sacred, excuses are not. If you can't keep up, that's on you.",
+    "posts_sample": "Posted about a project that was delayed, calling out 'a certain vendor' as 'useless and lazy' without naming them directly. Also posted genuinely helpful tips about vendor contract negotiation.",
+    "comments_sample": "Blunt but not abusive responses to questions in a project management forum.",
+    "network_notes": "5 endorsements for project coordination."
+  }
+]

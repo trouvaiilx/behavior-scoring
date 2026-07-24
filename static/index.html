@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Behavior Scoring — Prototype</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Candidate Social Media Behavior Scoring</h1>
+    <p class="subtitle">Internal R&amp;D prototype — advisory signal only, not an automated hiring decision.</p>
+    <div id="health-banner" class="health-banner">Checking Ollama connection…</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>1. Score a Candidate (sample / consented / synthetic data only)</h2>
+      <form id="score-form">
+        <label>Candidate label (non-identifying)
+          <input type="text" id="candidate_label" placeholder="e.g. sample_001" required />
+        </label>
+
+        <label>CV / resume claims
+          <textarea id="cv_claims" rows="3" placeholder="e.g. Software Engineer at X (2022-2024), skills: Python, SQL"></textarea>
+        </label>
+
+        <label>Public "About" / bio text
+          <textarea id="profile_about" rows="3"></textarea>
+        </label>
+
+        <label>Sample public posts / articles
+          <textarea id="posts_sample" rows="4"></textarea>
+        </label>
+
+        <label>Sample public comments / interactions
+          <textarea id="comments_sample" rows="3"></textarea>
+        </label>
+
+        <label>Network / endorsement notes
+          <textarea id="network_notes" rows="2"></textarea>
+        </label>
+
+        <button type="submit" id="submit-btn">Run Scoring</button>
+      </form>
+      <div id="error-box" class="error-box" hidden></div>
+    </section>
+
+    <section class="panel" id="result-panel" hidden>
+      <h2>2. Result</h2>
+      <div id="result-content"></div>
+    </section>
+
+    <section class="panel">
+      <h2>3. Past Runs (audit trail)</h2>
+      <button id="refresh-history">Refresh</button>
+      <div class="table-responsive">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th style="width: 36px;">ID</th>
+              <th style="width: 130px;">Label</th>
+              <th>Overall Summary</th>
+              <th style="width: 75px;">Composite</th>
+              <th style="width: 75px;">Red Flag</th>
+              <th style="width: 120px;">Model</th>
+              <th style="width: 125px;">Time (UTC)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
