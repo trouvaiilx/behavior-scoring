@@ -113,8 +113,9 @@ let historyCache = [];
 
 async function loadHistory() {
   try {
-    const res = await fetch("/api/scores");
-    const rows = await res.json();
+    const res = await fetch("/api/scores?limit=50&offset=0");
+    const data = await res.json();
+    const rows = Array.isArray(data) ? data : data.results || [];
     historyCache = rows;
     historyTableBody.innerHTML = rows
       .map(
@@ -150,14 +151,14 @@ async function loadHistory() {
   }
 }
 
+let inFlightScoreRequest = null;
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   errorBox.hidden = true;
-  submitBtn.disabled = true;
-  submitBtn.textContent = "Scoring… (this calls your local LLM, may take a bit)";
 
   const payload = {
-    candidate_label: document.getElementById("candidate_label").value,
+    candidate_label: document.getElementById("candidate_label").value.trim(),
     cv_claims: document.getElementById("cv_claims").value,
     profile_about: document.getElementById("profile_about").value,
     posts_sample: document.getElementById("posts_sample").value,
@@ -165,11 +166,41 @@ form.addEventListener("submit", async (e) => {
     network_notes: document.getElementById("network_notes").value,
   };
 
+  if (!payload.candidate_label) {
+    errorBox.hidden = false;
+    errorBox.textContent = "Candidate label is required.";
+    return;
+  }
+  const hasAnyText = [
+    payload.cv_claims,
+    payload.profile_about,
+    payload.posts_sample,
+    payload.comments_sample,
+    payload.network_notes,
+  ].some((v) => v && v.trim().length > 0);
+  if (!hasAnyText) {
+    errorBox.hidden = false;
+    errorBox.textContent = "Fill in at least one of the text fields before scoring.";
+    return;
+  }
+
+  // Cancel any previous still-running scoring request so a rapid
+  // double-submit can't leave a stale response racing to render later.
+  if (inFlightScoreRequest) {
+    inFlightScoreRequest.abort();
+  }
+  const controller = new AbortController();
+  inFlightScoreRequest = controller;
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Scoring… (this calls your local LLM, may take a bit)";
+
   try {
     const res = await fetch("/api/score", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
@@ -179,11 +210,18 @@ form.addEventListener("submit", async (e) => {
     renderResult(result);
     loadHistory();
   } catch (err) {
+    if (err.name === "AbortError") {
+      // Superseded by a newer request; nothing to show the user.
+      return;
+    }
     errorBox.hidden = false;
     errorBox.textContent = err.message;
   } finally {
-    submitBtn.disabled = false;
-    submitBtn.textContent = "Run Scoring";
+    if (inFlightScoreRequest === controller) {
+      inFlightScoreRequest = null;
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Run Scoring";
+    }
   }
 });
 

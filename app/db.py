@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     candidate_label TEXT NOT NULL,
     rubric_version TEXT NOT NULL,
+    rubric_hash TEXT NOT NULL DEFAULT '',
     model_used TEXT NOT NULL,
     overall_summary TEXT NOT NULL DEFAULT '',
     dimension_scores_json TEXT NOT NULL,
@@ -41,10 +42,12 @@ def _connect() -> sqlite3.Connection:
 def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
-        # Migration for DBs created before overall_summary existed.
+        # Migrations for DBs created before these columns existed.
         existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(scores)")}
         if "overall_summary" not in existing_cols:
             conn.execute("ALTER TABLE scores ADD COLUMN overall_summary TEXT NOT NULL DEFAULT ''")
+        if "rubric_hash" not in existing_cols:
+            conn.execute("ALTER TABLE scores ADD COLUMN rubric_hash TEXT NOT NULL DEFAULT ''")
 
 
 def save_score(result: ScoreResult) -> int:
@@ -53,15 +56,16 @@ def save_score(result: ScoreResult) -> int:
         cur = conn.execute(
             """
             INSERT INTO scores (
-                candidate_label, rubric_version, model_used, overall_summary,
+                candidate_label, rubric_version, rubric_hash, model_used, overall_summary,
                 dimension_scores_json, composite_score,
                 red_flag_status, red_flag_rationale,
                 excluded_attributes_json, raw_model_output, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 result.candidate_label,
                 result.rubric_version,
+                result.rubric_hash,
                 result.model_used,
                 result.overall_summary,
                 json.dumps([d.model_dump() for d in result.dimension_scores]),
@@ -76,12 +80,18 @@ def save_score(result: ScoreResult) -> int:
         return cur.lastrowid
 
 
-def list_scores(limit: int = 50) -> list[dict]:
+def list_scores(limit: int = 50, offset: int = 0) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
-            "SELECT * FROM scores ORDER BY id DESC LIMIT ?", (limit,)
+            "SELECT * FROM scores ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset)
         ).fetchall()
         return [_row_to_dict(r) for r in rows]
+
+
+def count_scores() -> int:
+    with _connect() as conn:
+        row = conn.execute("SELECT COUNT(*) AS n FROM scores").fetchone()
+        return row["n"]
 
 
 def get_score(score_id: int) -> dict | None:

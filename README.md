@@ -68,8 +68,12 @@ C:\Users\Yuuji\behavior-scoring\
     app.js
     index.html
     style.css
+  tests\
+    test_rubric.py
+    test_scoring.py
   data\                (created automatically on first run)
   .env.example
+  pytest.ini
   README.md
   requirements.txt
 ```
@@ -160,10 +164,32 @@ output — visible in the "Past Runs" table on the test page, or via
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/api/health` | Check backend + Ollama + model availability |
-| GET | `/api/rubric` | Return the active scoring rubric (dimensions, weights, exclusions) |
+| GET | `/api/rubric` | Return the active scoring rubric (dimensions, weights, exclusions, version, and a content hash) |
 | POST | `/api/score` | Score a candidate profile (see `CandidateProfileInput` in `app/schemas.py`) |
-| GET | `/api/scores` | List past scoring runs (audit trail) |
+| GET | `/api/scores?limit=&offset=` | List past scoring runs, paginated. Returns `{results, total, limit, offset}` |
 | GET | `/api/scores/{id}` | Get one past run in full detail, including raw model output |
+
+`GET /api/scores` returns an object, not a bare array, so pagination metadata
+(`total`) is available: `{"results": [...], "total": 42, "limit": 50, "offset": 0}`.
+
+Each score result also includes `rubric_hash`, a short content fingerprint of
+`app/rubric.py` at scoring time — this catches the case where the rubric's
+dimensions/weights change but `RUBRIC_VERSION` wasn't bumped by hand.
+
+---
+
+## 7a. Running the tests
+
+A small pytest suite covers the rubric math and the scoring pipeline's
+handling of malformed/unexpected model output (JSON extraction, out-of-range
+or non-numeric scores, invalid red-flag statuses, and the excluded-attribute
+keyword backstop). It does **not** require Ollama to be running — the LLM
+call is mocked.
+
+```bat
+pip install -r requirements.txt
+pytest
+```
 
 ---
 
@@ -179,6 +205,19 @@ output — visible in the "Past Runs" table on the test page, or via
 - This prototype does **not** implement authentication, rate limiting, or
   production-grade error handling — it is for local, single-user R&D use
   only.
+- The excluded-attributes rule (`app/rubric.py` → `EXCLUDED_ATTRIBUTES`) is
+  enforced via the prompt, plus a deterministic keyword backstop in
+  `app/scoring.py`. The backstop scans the model's own summary/rationale
+  text for excluded-attribute language it didn't self-report, and if found,
+  forces the run's red-flag status to at least `"review"`. It's intentionally
+  coarse (a prompt instruction is not a guarantee), so expect occasional
+  false positives — that's the safer failure mode here.
+- **v0.2.0 rubric note:** earlier versions of `app/rubric.py` had dimension
+  weights that summed to 0.75 instead of 1.0, silently under-scaling every
+  composite score by 25%. This has been fixed (weights renormalized,
+  `RUBRIC_VERSION` bumped to `0.2.0`) and is now covered by a test
+  (`tests/test_rubric.py::test_total_weight_sums_to_one`) so it can't
+  regress silently again.
 
 ---
 
