@@ -1,0 +1,67 @@
+Behavior Scoring Run Notes
+==========================
+
+Date: 2026-07-24
+
+What Happened
+-------------
+1. The project was inspected and identified as a Python FastAPI application.
+2. The documented start command is:
+   uvicorn app.main:app --reload
+3. The machine had Python 3.14.1 as the default Python version.
+4. Dependency installation with the default Python failed.
+5. The failure happened because pydantic-core==2.23.4, required by pydantic==2.9.2,
+   does not support Python 3.14 in this project setup.
+6. Ollama was installed and working.
+7. One local Ollama model was available:
+   qwen2.5:latest
+8. The project did not have a virtual environment or .env file yet.
+
+Mitigation Done
+---------------
+1. Installed Python 3.11 using uv because the README requires Python 3.11 or newer,
+   and the pinned dependencies are compatible with Python 3.11.
+2. Recreated the project virtual environment using Python 3.11.
+3. Installed project dependencies successfully using:
+   uv pip install --python "venv\Scripts\python.exe" -r requirements.txt
+4. Created a local .env file with the available Ollama model:
+   OLLAMA_MODEL=qwen2.5:latest
+5. Started the FastAPI backend on:
+   http://127.0.0.1:8000
+
+How To Run Next Time
+--------------------
+1. Open PowerShell in the project folder.
+2. Run the backend with:
+   venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+3. Open this URL in the browser:
+   http://127.0.0.1:8000
+4. Make sure Ollama is running before testing scoring features.
+5. Confirm the configured model exists by running:
+   ollama list
+
+Future Approach
+---------------
+1. Avoid using Python 3.14 for this project unless dependencies are upgraded and tested.
+2. Prefer Python 3.11 for stable local development with the current requirements.txt.
+3. Add a pinned Python version file, such as .python-version, to make the required
+   runtime clearer for future setup.
+4. Consider adding a setup script for Windows that creates the venv, installs
+   dependencies, copies .env.example to .env, and checks Ollama availability.
+5. Keep .env local and do not commit secrets or machine-specific configuration.
+6. If the project dependencies are updated later, test installation on the intended
+   Python version before changing the recommended runtime.
+
+Useful Commands
+---------------
+Check Python inside the venv:
+venv\Scripts\python.exe --version
+
+Install dependencies:
+uv pip install --python "venv\Scripts\python.exe" -r requirements.txt
+
+Start backend:
+venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+Check Ollama models:
+ollama list
