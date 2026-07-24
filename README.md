@@ -6,8 +6,7 @@ sources only) against a rubric using a **local** LLM via **Ollama** — no
 data leaves your machine.
 
 **This is a research prototype, not a hiring decision system.** Every score
-must be reviewed by a human before it influences anything (see the RFC in
-Notion: "R&D: Social Media Behavior Scoring for Candidate Screening").
+must be reviewed by a human before it influences anything.
 
 ---
 
