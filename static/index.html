@@ -3,75 +3,303 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Internal R&D prototype for candidate social-media behavior scoring using local LLM via Ollama." />
 <title>Behavior Scoring — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>Candidate Social Media Behavior Scoring</h1>
-    <p class="subtitle">Internal R&amp;D prototype — advisory signal only, not an automated hiring decision.</p>
-    <div id="health-banner" class="health-banner">Checking Ollama connection…</div>
+    <div class="header-inner">
+      <div class="header-left">
+        <h1>Behavior Scoring</h1>
+        <p class="subtitle">Internal R&amp;D prototype · advisory signal only</p>
+      </div>
+      <div id="health-banner" class="health-banner">Checking Ollama…</div>
+    </div>
   </header>
 
+  <!-- Tab Navigation -->
+  <nav class="tab-nav" id="tab-nav">
+    <button class="tab-btn active" data-tab="tab-score" id="tab-btn-score">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Score
+    </button>
+    <button class="tab-btn" data-tab="tab-history" id="tab-btn-history">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      History
+    </button>
+    <button class="tab-btn" data-tab="tab-analytics" id="tab-btn-analytics">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      Analytics
+    </button>
+    <button class="tab-btn" data-tab="tab-compare" id="tab-btn-compare">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Compare
+    </button>
+    <button class="tab-btn" data-tab="tab-batch" id="tab-btn-batch">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+      Batch
+    </button>
+  </nav>
+
   <main>
-    <section class="panel">
-      <h2>1. Score a Candidate (sample / consented / synthetic data only)</h2>
-      <form id="score-form">
-        <label>Candidate label (non-identifying)
-          <input type="text" id="candidate_label" placeholder="e.g. sample_001" required />
-        </label>
+    <!-- ==================== SCORE TAB ==================== -->
+    <div class="tab-content active" id="tab-score">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2>Score a Candidate</h2>
+          <span class="panel-badge">Sample / consented / synthetic data only</span>
+        </div>
+        <form id="score-form">
+          <div class="form-row">
+            <label>
+              <span class="label-text">Candidate Label <span class="required">*</span></span>
+              <input type="text" id="candidate_label" placeholder="e.g. sample_001" required />
+            </label>
+            <label>
+              <span class="label-text">Target Job Role</span>
+              <input type="text" id="job_role" placeholder="e.g. Senior Software Engineer" />
+            </label>
+          </div>
 
-        <label>CV / resume claims
-          <textarea id="cv_claims" rows="3" placeholder="e.g. Software Engineer at X (2022-2024), skills: Python, SQL"></textarea>
-        </label>
+          <label>
+            <span class="label-text">CV / Resume Claims</span>
+            <textarea id="cv_claims" rows="3" placeholder="e.g. Software Engineer at X (2022-2024), skills: Python, SQL"></textarea>
+          </label>
 
-        <label>Public "About" / bio text
-          <textarea id="profile_about" rows="3"></textarea>
-        </label>
+          <label>
+            <span class="label-text">Public "About" / Bio Text</span>
+            <textarea id="profile_about" rows="3"></textarea>
+          </label>
 
-        <label>Sample public posts / articles
-          <textarea id="posts_sample" rows="4"></textarea>
-        </label>
+          <label>
+            <span class="label-text">Sample Public Posts / Articles</span>
+            <textarea id="posts_sample" rows="4"></textarea>
+          </label>
 
-        <label>Sample public comments / interactions
-          <textarea id="comments_sample" rows="3"></textarea>
-        </label>
+          <label>
+            <span class="label-text">Sample Public Comments / Interactions</span>
+            <textarea id="comments_sample" rows="3"></textarea>
+          </label>
 
-        <label>Network / endorsement notes
-          <textarea id="network_notes" rows="2"></textarea>
-        </label>
+          <label>
+            <span class="label-text">Network / Endorsement Notes</span>
+            <textarea id="network_notes" rows="2"></textarea>
+          </label>
 
-        <button type="submit" id="submit-btn">Run Scoring</button>
-      </form>
-      <div id="error-box" class="error-box" hidden></div>
-    </section>
-
-    <section class="panel" id="result-panel" hidden>
-      <h2>2. Result</h2>
-      <div id="result-content"></div>
-    </section>
-
-    <section class="panel">
-      <h2>3. Past Runs (audit trail)</h2>
-      <button id="refresh-history">Refresh</button>
-      <div class="table-responsive">
-        <table id="history-table">
-          <thead>
-            <tr>
-              <th style="width: 36px;">ID</th>
-              <th style="width: 130px;">Label</th>
-              <th>Overall Summary</th>
-              <th style="width: 75px;">Composite</th>
-              <th style="width: 75px;">Red Flag</th>
-              <th style="width: 120px;">Model</th>
-              <th style="width: 125px;">Time (UTC)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-glow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Run Scoring
+          </button>
+        </form>
+        <div id="error-box" class="error-box" hidden></div>
       </div>
-    </section>
+
+      <div class="panel glass-panel" id="result-panel" hidden>
+        <div class="panel-header">
+          <h2>Result</h2>
+        </div>
+        <div id="result-content"></div>
+      </div>
+    </div>
+
+    <!-- ==================== HISTORY TAB ==================== -->
+    <div class="tab-content" id="tab-history">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2>Scoring History</h2>
+          <div class="header-actions">
+            <button class="btn btn-outline btn-sm" id="export-csv-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <button class="btn btn-outline btn-sm" id="export-json-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export JSON
+            </button>
+            <button class="btn btn-accent btn-sm" id="refresh-history">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Filters Toolbar -->
+        <div class="filters-bar" id="filters-bar">
+          <div class="filter-group">
+            <input type="text" id="filter-search" class="filter-input" placeholder="Search label, role, summary…" />
+          </div>
+          <div class="filter-group">
+            <select id="filter-red-flag" class="filter-select">
+              <option value="">All Red Flags</option>
+              <option value="pass">Pass</option>
+              <option value="review">Review</option>
+              <option value="fail">Fail</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select id="filter-human-review" class="filter-select">
+              <option value="">All Reviews</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="overridden">Overridden</option>
+            </select>
+          </div>
+          <div class="filter-group filter-range">
+            <input type="number" id="filter-min-score" class="filter-input filter-input-sm" placeholder="Min" min="0" max="100" step="1" />
+            <span class="filter-dash">–</span>
+            <input type="number" id="filter-max-score" class="filter-input filter-input-sm" placeholder="Max" min="0" max="100" step="1" />
+          </div>
+          <div class="filter-group">
+            <select id="filter-sort-by" class="filter-select">
+              <option value="id">Sort: Latest</option>
+              <option value="composite_score">Sort: Score</option>
+              <option value="created_at">Sort: Date</option>
+              <option value="candidate_label">Sort: Label</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <select id="filter-sort-order" class="filter-select filter-select-sm">
+              <option value="desc">↓ Desc</option>
+              <option value="asc">↑ Asc</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="apply-filters-btn">Apply</button>
+          <button class="btn btn-ghost btn-sm" id="clear-filters-btn">Clear</button>
+        </div>
+
+        <div class="history-stats" id="history-stats"></div>
+
+        <div class="table-responsive">
+          <table id="history-table">
+            <thead>
+              <tr>
+                <th style="width:36px">ID</th>
+                <th style="width:120px">Label</th>
+                <th style="width:100px">Job Role</th>
+                <th>Summary</th>
+                <th style="width:70px">Score</th>
+                <th style="width:68px">Red Flag</th>
+                <th style="width:78px">Review</th>
+                <th style="width:115px">Time</th>
+                <th style="width:90px">Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== ANALYTICS TAB ==================== -->
+    <div class="tab-content" id="tab-analytics">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2>Analytics Dashboard</h2>
+          <button class="btn btn-accent btn-sm" id="refresh-analytics-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            Refresh
+          </button>
+        </div>
+        <div id="analytics-content" class="analytics-content">
+          <p class="muted-text">Loading analytics…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== COMPARE TAB ==================== -->
+    <div class="tab-content" id="tab-compare">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2>Side-by-Side Comparison</h2>
+        </div>
+        <div class="compare-input-row">
+          <label>
+            <span class="label-text">Score IDs (comma-separated)</span>
+            <input type="text" id="compare-ids" placeholder="e.g. 1, 2, 5" />
+          </label>
+          <button class="btn btn-primary btn-sm" id="compare-btn">Compare</button>
+        </div>
+        <div id="compare-content"></div>
+      </div>
+    </div>
+
+    <!-- ==================== BATCH TAB ==================== -->
+    <div class="tab-content" id="tab-batch">
+      <div class="panel glass-panel">
+        <div class="panel-header">
+          <h2>Batch Scoring</h2>
+          <span class="panel-badge">Submit multiple profiles at once (max 20)</span>
+        </div>
+        <div class="batch-input-area">
+          <label>
+            <span class="label-text">Batch JSON Payload</span>
+            <textarea id="batch-json" rows="14" placeholder='[
+  {
+    "candidate_label": "batch_001",
+    "job_role": "Software Engineer",
+    "cv_claims": "...",
+    "profile_about": "...",
+    "posts_sample": "...",
+    "comments_sample": "...",
+    "network_notes": "..."
+  }
+]'></textarea>
+          </label>
+          <button class="btn btn-primary" id="batch-submit-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Submit Batch
+          </button>
+        </div>
+        <div id="batch-status" class="batch-status-area"></div>
+      </div>
+    </div>
   </main>
+
+  <!-- Human Review Modal -->
+  <div class="modal-overlay" id="review-modal" hidden>
+    <div class="modal glass-panel">
+      <div class="modal-header">
+        <h3>Human Review</h3>
+        <button class="modal-close" id="review-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="review-modal-label" class="muted-text"></p>
+        <label>
+          <span class="label-text">Review Status</span>
+          <select id="review-status" class="filter-select">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="overridden">Overridden</option>
+          </select>
+        </label>
+        <label>
+          <span class="label-text">Review Notes</span>
+          <textarea id="review-notes" rows="3" placeholder="e.g. Reviewed and cleared by HR manager"></textarea>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" id="review-cancel-btn">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="review-save-btn">Save Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Detail Modal -->
+  <div class="modal-overlay" id="detail-modal" hidden>
+    <div class="modal modal-lg glass-panel">
+      <div class="modal-header">
+        <h3 id="detail-modal-title">Score Detail</h3>
+        <button class="modal-close" id="detail-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" id="detail-modal-body"></div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
