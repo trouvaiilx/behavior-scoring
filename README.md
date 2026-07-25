@@ -13,29 +13,36 @@ must be reviewed by a human before it influences anything.
 ## 1. What you need to install first
 
 ### 1.1 Python
+
 Install Python 3.11 or newer: https://www.python.org/downloads/
 During install on Windows, check **"Add python.exe to PATH"**.
 
 Verify in Command Prompt / PowerShell:
+
 ```
 python --version
 ```
 
 ### 1.2 Ollama (local LLM runtime)
+
 Download and install for Windows: https://ollama.com/download
 
 After installing, Ollama runs a local server at `http://localhost:11434`
 automatically (it also starts on login). Verify it's running:
+
 ```
 ollama --version
 ```
 
 ### 1.3 Pull a model
+
 Pick a model to use locally. For a first try on a normal laptop, a smaller
 model is easiest, e.g.:
+
 ```
 ollama pull llama3.1
 ```
+
 (Other options: `mistral`, `qwen2.5`, `gemma2` — bigger models score better
 but need more RAM/VRAM. Run `ollama list` anytime to see what you have.)
 
@@ -48,11 +55,13 @@ but need more RAM/VRAM. Run `ollama list` anytime to see what you have.)
 ## 2. Where to put these files
 
 Extract/copy all the files from this project into:
+
 ```
 C:\Users\Yuuji\behavior-scoring
 ```
 
 You should end up with this structure:
+
 ```
 C:\Users\Yuuji\behavior-scoring\
   app\
@@ -113,13 +122,13 @@ copy .env.example .env
 ```
 
 Open the new `.env` file in Notepad (or any editor) and replace:
+
 ```
 OLLAMA_MODEL=REPLACE_WITH_YOUR_MODEL
 ```
+
 with the model you pulled in step 1.3, e.g.:
-```
-OLLAMA_MODEL=llama3.1
-```
+
 Save the file.
 
 ---
@@ -131,11 +140,13 @@ unsure, just run `ollama serve` in a separate terminal window and leave it
 open).
 
 Then, with your venv activated:
+
 ```bat
 uvicorn app.main:app --reload
 ```
 
 You should see output ending with something like:
+
 ```
 Uvicorn running on http://127.0.0.1:8000
 ```
@@ -161,13 +172,13 @@ output — visible in the "Past Runs" table on the test page, or via
 
 ## 7. API summary
 
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/health` | Check backend + Ollama + model availability |
-| GET | `/api/rubric` | Return the active scoring rubric (dimensions, weights, exclusions, version, and a content hash) |
-| POST | `/api/score` | Score a candidate profile (see `CandidateProfileInput` in `app/schemas.py`) |
-| GET | `/api/scores?limit=&offset=` | List past scoring runs, paginated. Returns `{results, total, limit, offset}` |
-| GET | `/api/scores/{id}` | Get one past run in full detail, including raw model output |
+| Method | Path                           | Purpose                                                                                         |
+| ------ | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| GET    | `/api/health`                | Check backend + Ollama + model availability                                                     |
+| GET    | `/api/rubric`                | Return the active scoring rubric (dimensions, weights, exclusions, version, and a content hash) |
+| POST   | `/api/score`                 | Score a candidate profile (see`CandidateProfileInput` in `app/schemas.py`)                  |
+| GET    | `/api/scores?limit=&offset=` | List past scoring runs, paginated. Returns`{results, total, limit, offset}`                   |
+| GET    | `/api/scores/{id}`           | Get one past run in full detail, including raw model output                                     |
 
 `GET /api/scores` returns an object, not a bare array, so pagination metadata
 (`total`) is available: `{"results": [...], "total": 42, "limit": 50, "offset": 0}`.
