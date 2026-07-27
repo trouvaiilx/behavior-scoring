@@ -3,5 +3,3 @@ __pycache__/
 *.pyc
 .env
 data/*.db
-UI Skills.md
-UX Skills.md

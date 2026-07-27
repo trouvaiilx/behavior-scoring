@@ -1,4 +1,4 @@
-# Behavior Scoring — Backend Prototype
+# Behavior Scoring — Prototype
 
 Internal R&D prototype for the "Social Media Behavior Scoring for Candidate
 Screening" project. Scores candidate text (from safe/consented/synthetic
@@ -7,6 +7,24 @@ data leaves your machine.
 
 **This is a research prototype, not a hiring decision system.** Every score
 must be reviewed by a human before it influences anything.
+
+---
+
+## Table of Contents
+
+- [1. What you need to install first](#1-what-you-need-to-install-first)
+  - [1.1 Python](#11-python)
+  - [1.2 Ollama (local LLM runtime)](#12-ollama-local-llm-runtime)
+  - [1.3 Pull a model](#13-pull-a-model)
+- [2. Where to put these files](#2-where-to-put-these-files)
+- [3. Set up the Python environment](#3-set-up-the-python-environment)
+- [4. Configure your model](#4-configure-your-model)
+- [5. Run the backend](#5-run-the-backend)
+- [6. Try it out](#6-try-it-out)
+- [7. API summary](#7-api-summary)
+- [7a. Running the tests](#7a-running-the-tests)
+- [8. Important reminders](#8-important-reminders)
+- [9. Common issues](#9-common-issues)
 
 ---
 
