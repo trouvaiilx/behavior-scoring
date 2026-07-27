@@ -1,0 +1,27 @@
+name: Lint
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Ruff
+        run: pip install ruff
+        
+      - name: Run Ruff Linter
+        # This will check for syntax errors, unused imports, and style issues
+        run: ruff check .
+        
+      - name: Run Ruff Formatter Check
+        # This checks if the code is formatted properly
+        run: ruff format --check .
