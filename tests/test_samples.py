@@ -21,7 +21,9 @@ def test_sample_profiles_json_structure():
     for raw_profile in data:
         profile = CandidateProfileInput(**raw_profile)
         assert profile.candidate_label, "Each profile must have candidate_label"
-        assert profile.candidate_label not in labels, f"Duplicate label: {profile.candidate_label}"
+        assert profile.candidate_label not in labels, (
+            f"Duplicate label: {profile.candidate_label}"
+        )
         labels.add(profile.candidate_label)
 
 

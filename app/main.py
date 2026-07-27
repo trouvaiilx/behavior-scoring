@@ -1,10 +1,10 @@
+from contextlib import asynccontextmanager
 import csv
 import io
 import json
 import logging
-import uuid
-from contextlib import asynccontextmanager
 from pathlib import Path
+import uuid
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -88,7 +88,7 @@ async def _process_batch_job(batch_id: str, profiles: list[CandidateProfileInput
                 },
                 succeeded=True,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             logger.error(
                 "Batch item failed for candidate '%s': %s", profile.candidate_label, e
             )
@@ -138,13 +138,17 @@ SAMPLES_PATH = Path(__file__).parent.parent / "sample_data" / "sample_profiles.j
 def get_sample_profiles():
     """Returns the set of curated sample profiles for quick UI pre-filling and testing."""
     if not SAMPLES_PATH.exists():
-        raise HTTPException(status_code=404, detail="Sample profiles dataset not found.")
+        raise HTTPException(
+            status_code=404, detail="Sample profiles dataset not found."
+        )
     try:
         data = json.loads(SAMPLES_PATH.read_text(encoding="utf-8"))
         return [CandidateProfileInput(**item) for item in data]
     except (json.JSONDecodeError, ValidationError, OSError) as e:
         logger.error("Failed to read sample profiles: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to load sample profiles.")
+        raise HTTPException(
+            status_code=500, detail="Failed to load sample profiles."
+        ) from None
 
 
 @app.post("/api/score", response_model=ScoreResult)
@@ -155,7 +159,7 @@ async def create_score(profile: CandidateProfileInput):
         logger.error(
             "Scoring failed for candidate '%s': %s", profile.candidate_label, e
         )
-        raise HTTPException(status_code=502, detail=str(e))
+        raise HTTPException(status_code=502, detail=str(e)) from e
 
     score_id = db.save_score(result)
     result.id = score_id
@@ -323,7 +327,7 @@ def compare_candidates(
         raise HTTPException(
             status_code=400,
             detail="Invalid score ID list format. Expected comma-separated integers.",
-        )
+        ) from None
 
     if not id_list:
         raise HTTPException(

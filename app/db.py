@@ -6,10 +6,10 @@ output, and timestamp — this is the minimal audit trail: enough to trace
 back any score to exactly what produced it.
 """
 
+from datetime import UTC, datetime, timedelta
 import json
-import sqlite3
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sqlite3
 
 from app.config import DATABASE_PATH
 from app.schemas import ScoreResult
@@ -103,7 +103,7 @@ def init_db() -> None:
 
 
 def save_score(result: ScoreResult) -> int:
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
     hr_status = result.human_review.status if result.human_review else "pending"
     hr_notes = result.human_review.notes if result.human_review else ""
     hr_reviewed_at = (
@@ -270,7 +270,7 @@ def get_scores_by_ids(score_ids: list[int]) -> list[dict]:
 
 
 def update_human_review(score_id: int, status: str, notes: str) -> dict | None:
-    reviewed_at = datetime.now(timezone.utc).isoformat()
+    reviewed_at = datetime.now(UTC).isoformat()
     with _connect() as conn:
         cur = conn.execute(
             """
@@ -394,7 +394,7 @@ def get_analytics_summary() -> dict:
 
 
 def create_batch_job(batch_id: str, total_items: int) -> dict:
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with _connect() as conn:
         conn.execute(
             """
@@ -453,7 +453,7 @@ def append_batch_result(batch_id: str, item_result: dict, succeeded: bool) -> No
                 json.dumps(results),
                 completed,
                 failed,
-                datetime.now(timezone.utc).isoformat(),
+                datetime.now(UTC).isoformat(),
                 batch_id,
             ),
         )
@@ -463,7 +463,7 @@ def finalize_batch_job(batch_id: str, status: str) -> None:
     with _connect() as conn:
         conn.execute(
             "UPDATE batch_jobs SET status = ?, updated_at = ? WHERE batch_id = ?",
-            (status, datetime.now(timezone.utc).isoformat(), batch_id),
+            (status, datetime.now(UTC).isoformat(), batch_id),
         )
 
 
@@ -475,7 +475,7 @@ def cleanup_old_batch_jobs(max_age_hours: int = 24) -> int:
     unbounded over the life of a long-running server without adding any
     new infrastructure. Returns the number of rows deleted.
     """
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max_age_hours)).isoformat()
+    cutoff = (datetime.now(UTC) - timedelta(hours=max_age_hours)).isoformat()
     with _connect() as conn:
         cur = conn.execute("DELETE FROM batch_jobs WHERE created_at < ?", (cutoff,))
         return cur.rowcount

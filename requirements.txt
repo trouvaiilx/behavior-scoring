@@ -8,3 +8,4 @@ requests==2.32.3
 # Dev/test dependencies (not required to run the app itself)
 pytest==9.1.1
 pytest-asyncio==1.4.0
+ruff>=0.16.0
