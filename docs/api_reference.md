@@ -122,8 +122,8 @@ output in the `profiles` field.
 
 | Request field | Type | Required | Constraints and behavior |
 | --- | --- | --- | --- |
-| `profiles` | array of `CandidateProfileInput` or null | Operationally yes | Maximum 100 profiles. Each supplied item follows `CandidateProfileInput` validation. The handler requires a list in practice; an empty list is accepted as a zero-record import. |
-| `json_file` | string or null | No | Maximum 500,000 characters. It is declared in the schema but the current handler does not parse it into profiles, so it is not a usable import mechanism. |
+| `profiles` | array of `CandidateProfileInput` | Conditionally | Provide a non-empty list of up to 100 profiles. Each item follows `CandidateProfileInput` validation. Do not supply this field with `json_file`. |
+| `json_file` | string | Conditionally | Provide JSON text containing either a non-empty profile array or `{ "profiles": [...] }`. Maximum length is `MAX_FIELD_CHARS * 100` (800,000 by default). Do not supply this field with `profiles`. |
 
 `CandidateImportResponse` contains `imported_count` (integer), `candidate_ids`
 (integer array), and `status` (always `"success"`). IDs identify records in the
@@ -352,18 +352,19 @@ Success response (`200 OK`):
 cannot be passed to score-detail or batch-status routes, and no scoring is
 started by this endpoint.
 
+The same import can be submitted from JSON-file contents:
+
+```json
+{
+  "json_file": "{\"profiles\":[{\"candidate_label\":\"consented_sample_001\"}]}"
+}
+```
+
 Error responses:
 
 | Status | When returned |
 | --- | --- |
-| `422` | `profiles` has more than 100 entries, an individual profile fails `CandidateProfileInput` validation, or `json_file` exceeds 500,000 characters. |
-
-The schema accepts `profiles: null` and `json_file`, but the current handler
-passes `profiles` directly to persistence and does not parse `json_file`.
-Consequently, callers must provide a `profiles` list. An empty list succeeds as
-a zero-record import. Supplying only `json_file` or omitting `profiles`
-currently produces a server error rather than a validation response; this is a
-known prototype limitation.
+| `422` | Neither or both import sources are provided, the supplied list is empty or has more than 100 entries, an individual profile fails `CandidateProfileInput` validation, or `json_file` is invalid or exceeds its size limit. |
 
 `scripts/scraper_bridge.py` accepts a JSON array, a single candidate object,
 or an envelope using `candidates` or `profiles`. It normalizes common scraper

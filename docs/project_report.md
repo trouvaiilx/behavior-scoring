@@ -110,7 +110,8 @@ graph TB
 
 ## 5. Next Planned Priorities
 
-1. **Authentication & API Keys** (`POST /api/auth/token`)
-2. **Candidate Data Import** (`POST /api/candidates/import`)
-3. **Scraper Bridge Integration** (Connecting Playwright scraper to scoring pipeline)
-4. **Workflow Automation** (Windmill / Activepieces)
+1. **Rubric Versioning** (`POST /api/rubric/versions`)
+2. **Usage Statistics** (`GET /api/usage/stats`)
+3. **Report Generation** (`POST /api/reports/generate`)
+4. **Scraper-to-Scoring Integration** (connecting approved scraper output to the scoring workflow)
+5. **Workflow Automation** (Windmill / Activepieces)

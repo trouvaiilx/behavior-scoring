@@ -106,6 +106,7 @@ class CandidateImportRequest(BaseModel):
 class CandidateImportResponse(BaseModel):
     imported_count: int
     candidate_ids: list[int]
+    status: Literal["success"] = "success"
 
 
 class DimensionScore(BaseModel):
@@ -139,17 +140,6 @@ class TokenRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: Literal["bearer"] = "bearer"
-
-
-class CandidateImportRequest(BaseModel):
-    profiles: Optional[list[CandidateProfileInput]] = Field(default=None, max_length=100)
-    json_file: Optional[str] = Field(default=None, max_length=500000)
-
-
-class CandidateImportResponse(BaseModel):
-    imported_count: int
-    candidate_ids: list[int]
-    status: Literal["success"] = "success"
 
 
 class WebhookRegisterRequest(BaseModel):
