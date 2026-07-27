@@ -4,10 +4,12 @@ import json
 import logging
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 from app import db, ollama_client
 from app.config import (
@@ -127,6 +129,22 @@ def get_rubric():
         "rubric_version": RUBRIC_VERSION,
         "rubric_hash": rubric_hash(),
     }
+
+
+SAMPLES_PATH = Path(__file__).parent.parent / "sample_data" / "sample_profiles.json"
+
+
+@app.get("/api/samples", response_model=list[CandidateProfileInput])
+def get_sample_profiles():
+    """Returns the set of curated sample profiles for quick UI pre-filling and testing."""
+    if not SAMPLES_PATH.exists():
+        raise HTTPException(status_code=404, detail="Sample profiles dataset not found.")
+    try:
+        data = json.loads(SAMPLES_PATH.read_text(encoding="utf-8"))
+        return [CandidateProfileInput(**item) for item in data]
+    except (json.JSONDecodeError, ValidationError, OSError) as e:
+        logger.error("Failed to read sample profiles: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to load sample profiles.")
 
 
 @app.post("/api/score", response_model=ScoreResult)
