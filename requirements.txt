@@ -6,5 +6,5 @@ python-dotenv==1.2.2
 requests==2.32.3
 
 # Dev/test dependencies (not required to run the app itself)
-pytest==8.3.3
+pytest==9.1.1
 pytest-asyncio==1.4.0
