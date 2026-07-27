@@ -346,18 +346,23 @@
             <div id="scrape-upload-result" style="margin-top: 15px; font-size: 0.85rem;"></div>
           </div>
 
-          <!-- Right: Social Media Quick Check -->
+          <!-- Right: Live Internet & Social Media Footprint Search Form -->
           <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03);">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">🔍 Quick Social Media Profile Check</h3>
-            <p class="muted-text" style="font-size: 0.85rem;">Input a candidate's social handle or profile text for instant evaluation.</p>
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">🌐 Live Internet &amp; Social Footprint Search</h3>
+            <p class="muted-text" style="font-size: 0.85rem;">Enter a candidate name or social handle. The system automatically fetches public web articles, GitHub profiles, and digital footprint signals in real-time.</p>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-              <input type="text" id="social-label" placeholder="Candidate Name / Label (e.g. @dev_alex)" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff;" />
-              <input type="text" id="social-role" placeholder="Target Role (e.g. Full Stack Developer)" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff;" />
-              <textarea id="social-posts" rows="4" placeholder="Scraped Social Media Posts / Bio / Web Search Snippet..." style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff;"></textarea>
-              <button class="btn btn-primary" id="social-score-btn" style="width: 100%;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                Scrape &amp; Score Profile Signal
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+              <div>
+                <label class="label-text" for="live-search-name">Candidate Name / Social Handle</label>
+                <input type="text" id="live-search-name" placeholder="e.g. torvalds, @alex_dev, or Linus Torvalds" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+              </div>
+              <div>
+                <label class="label-text" for="live-search-role">Target Job Role</label>
+                <input type="text" id="live-search-role" placeholder="e.g. Linux Kernel Developer or Software Engineer" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+              </div>
+              <button class="btn btn-primary" id="live-search-submit-btn" style="width: 100%; margin-top: 5px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                🌐 Search Internet &amp; Score Digital Footprint
               </button>
             </div>
           </div>

@@ -1048,30 +1048,49 @@ if (scrapeUploadBtn) {
   });
 }
 
-if (socialLabelBtn) {
-  socialLabelBtn.addEventListener("click", async () => {
-    const label = socialLabelInput.value.trim();
-    const role  = socialRoleInput.value.trim();
-    const posts = socialPostsInput.value.trim();
+const liveSearchBtn  = document.getElementById("live-search-submit-btn");
+const liveSearchName = document.getElementById("live-search-name");
+const liveSearchRole = document.getElementById("live-search-role");
 
-    if (!label) {
-      showToast("Please enter a Candidate Name / Label.", "error");
+if (liveSearchBtn) {
+  liveSearchBtn.addEventListener("click", async () => {
+    const name = liveSearchName.value.trim();
+    const role = liveSearchRole.value.trim();
+
+    if (!name) {
+      showToast("Please enter a candidate name or social handle to search.", "error");
       return;
     }
-    if (!posts) {
-      showToast("Please enter scraped social media posts or bio text.", "error");
-      return;
+
+    showToast(`Searching internet & GitHub footprint for '${name}'...`, "info");
+    liveSearchBtn.disabled = true;
+    liveSearchBtn.innerHTML = `<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Searching & Scoring...`;
+
+    try {
+      const res = await fetch("/api/candidates/live-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidate_name: name, job_role: role }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Live search failed");
+      }
+
+      const scoreResult = await res.json();
+      showToast(`Digital footprint analysis complete — score: ${scoreResult.composite_score}/100`, "success");
+      
+      // Switch to Analyze tab and display result
+      document.getElementById("tab-btn-score").click();
+      renderResult(scoreResult);
+      loadHistory();
+    } catch (e) {
+      showToast(`Live Search error: ${e.message}`, "error");
+    } finally {
+      liveSearchBtn.disabled = false;
+      liveSearchBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 🌐 Search Internet &amp; Score Digital Footprint`;
     }
-
-    // Switch to Analyze tab and trigger scoring
-    document.getElementById("candidate_label").value = label;
-    document.getElementById("job_role").value        = role;
-    document.getElementById("posts_sample").value    = posts;
-
-    // Trigger main Analyze tab
-    document.getElementById("tab-btn-score").click();
-    showToast(`Submitting social profile '${label}' for LLM analysis...`, "info");
-    document.getElementById("submit-btn").click();
   });
 }
 
