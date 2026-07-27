@@ -230,3 +230,39 @@ def test_batch_score_endpoint_mock(monkeypatch):
     status_resp = client.get(f"/api/scores/batch/{batch_id}")
     assert status_resp.status_code == 200
     assert status_resp.json()["total_items"] == 2
+
+
+def test_batch_job_persists_to_db_and_tracks_failures(monkeypatch):
+    """Batch job state must live in SQLite (not an in-memory dict), so a
+    fresh call to db.get_batch_job -- as would happen after a process
+    restart -- still finds it, and per-item failures are recorded without
+    aborting the rest of the batch."""
+
+    async def mock_score_candidate(profile):
+        if profile.candidate_label == "will_fail":
+            raise RuntimeError("simulated scoring failure")
+        return _create_sample_score_result(profile.candidate_label, 60.0, "pass")
+
+    monkeypatch.setattr("app.main.score_candidate", mock_score_candidate)
+
+    batch_payload = {
+        "profiles": [
+            {"candidate_label": "will_succeed", "cv_claims": "Role"},
+            {"candidate_label": "will_fail", "cv_claims": "Role"},
+        ]
+    }
+
+    resp = client.post("/api/scores/batch", json=batch_payload)
+    assert resp.status_code == 200
+    batch_id = resp.json()["batch_id"]
+
+    # Read directly from the db layer, as a separate connection would --
+    # this is what makes the job durable across a server restart.
+    job = db.get_batch_job(batch_id)
+    assert job is not None
+    assert job["total_items"] == 2
+    assert job["completed_items"] == 1
+    assert job["failed_items"] == 1
+    statuses = {r["candidate_label"]: r["status"] for r in job["results"]}
+    assert statuses["will_succeed"] == "completed"
+    assert statuses["will_fail"] == "failed"
