@@ -65,3 +65,19 @@ def test_get_scores_returns_previously_created_score(api_request: APIRequestCont
     assert payload["offset"] == 0
     assert len(payload["results"]) == 1
     assert payload["results"][0]["candidate_label"] == "listed_candidate"
+
+
+def test_live_search_candidate_endpoint(api_request: APIRequestContext):
+    response = api_request.post(
+        "/api/candidates/live-search",
+        data={
+            "candidate_name": "sample_dev_test",
+            "job_role": "Python Engineer",
+        },
+    )
+    assert response.status == 200
+    payload = response.json()
+    assert payload["candidate_label"] == "sample_dev_test"
+    assert "composite_score" in payload
+    assert "red_flag" in payload
+

@@ -11,7 +11,7 @@ from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app import db, ollama_client
+from app import db, ollama_client, web_search
 from app.config import API_SECRET_KEY, CORS_ALLOW_ORIGINS, DEFAULT_SCORES_LIMIT, MAX_SCORES_LIMIT, RUBRIC_VERSION
 from app.rubric import DIMENSIONS, EXCLUDED_ATTRIBUTES, RED_FLAG_WEIGHT_NOTE, rubric_hash
 from app.schemas import (
@@ -23,6 +23,7 @@ from app.schemas import (
     CandidateImportResponse,
     CandidateProfileInput,
     HumanReviewUpdate,
+    LiveSearchRequest,
     ScoreResult,
     TokenRequest,
     TokenResponse,
@@ -143,6 +144,25 @@ def create_token(credentials: TokenRequest):
 def import_candidates(request: CandidateImportRequest):
     candidate_ids = db.insert_candidates(request.profiles)
     return CandidateImportResponse(imported_count=len(candidate_ids), candidate_ids=candidate_ids)
+
+
+@app.post("/api/candidates/live-search", response_model=ScoreResult)
+async def live_search_and_score(request: LiveSearchRequest):
+    """Gathers live public digital footprint signals for a candidate name across web/GitHub,
+    imports the profile, and evaluates it via Ollama LLM."""
+    footprint = web_search.search_candidate_digital_footprint(request.candidate_name, request.job_role)
+    profile = CandidateProfileInput(**footprint)
+    db.insert_candidates([profile])
+    
+    try:
+        result = await score_candidate(profile)
+    except ScoringError as e:
+        logger.error("Live search scoring failed for '%s': %s", request.candidate_name, e)
+        raise HTTPException(status_code=502, detail=str(e))
+
+    score_id = db.save_score(result)
+    result.id = score_id
+    return result
 
 
 @app.post("/api/webhooks", response_model=WebhookResponse, status_code=201)

@@ -238,3 +238,9 @@ class CandidateComparisonResponse(BaseModel):
     lowest_scoring_candidate: Optional[str] = None
     red_flags_summary: dict[str, int]
 
+
+class LiveSearchRequest(BaseModel):
+    candidate_name: str = Field(..., min_length=1, max_length=200)
+    job_role: str = Field(default="", max_length=200)
+
+
