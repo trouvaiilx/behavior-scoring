@@ -9,7 +9,9 @@ with the model set in OLLAMA_MODEL already pulled, e.g.:
 
 Docs: https://github.com/ollama/ollama/blob/main/docs/api.md
 """
+
 import json
+
 import httpx
 
 from app.config import OLLAMA_BASE_URL, OLLAMA_MODEL, OLLAMA_TIMEOUT

@@ -13,10 +13,10 @@ from app.scoring import (
     score_candidate,
 )
 
-
 # ---------------------------------------------------------------------------
 # _extract_json
 # ---------------------------------------------------------------------------
+
 
 def test_extract_json_clean():
     assert _extract_json('{"a": 1}') == {"a": 1}
@@ -41,6 +41,7 @@ def test_extract_json_garbage_raises():
 # _safe_score
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "raw_value,expected",
     [
@@ -61,6 +62,7 @@ def test_safe_score(raw_value, expected):
 # _safe_red_flag_status
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.parametrize(
     "raw_value,expected",
     [
@@ -80,8 +82,11 @@ def test_safe_red_flag_status(raw_value, expected):
 # _keyword_backstop_hits
 # ---------------------------------------------------------------------------
 
+
 def test_keyword_backstop_detects_excluded_attribute_language():
-    hits = _keyword_backstop_hits(["The candidate mentioned they are pregnant in one post."])
+    hits = _keyword_backstop_hits(
+        ["The candidate mentioned they are pregnant in one post."]
+    )
     assert "marital or family status, pregnancy" in hits
 
 
@@ -94,11 +99,14 @@ def test_keyword_backstop_no_false_positive_on_unrelated_text():
 # score_candidate (end-to-end, with a mocked Ollama client)
 # ---------------------------------------------------------------------------
 
+
 def _sample_model_response(overrides=None):
     payload = {
         "overall_summary": "Solid technical communicator with consistent history.",
         "dimension_scores": {d["key"]: 80 for d in DIMENSIONS},
-        "dimension_rationale": {d["key"]: "Consistently strong evidence." for d in DIMENSIONS},
+        "dimension_rationale": {
+            d["key"]: "Consistently strong evidence." for d in DIMENSIONS
+        },
         "red_flag_status": "pass",
         "red_flag_rationale": "No concerning content found.",
         "excluded_attributes_detected": [],
@@ -158,7 +166,9 @@ async def test_score_candidate_applies_keyword_backstop(monkeypatch, sample_prof
     assert any("pregnancy" in a.lower() for a in result.excluded_attributes_detected)
 
 
-async def test_score_candidate_handles_malformed_model_output(monkeypatch, sample_profile):
+async def test_score_candidate_handles_malformed_model_output(
+    monkeypatch, sample_profile
+):
     async def fake_generate_json(system_prompt, user_prompt):
         return "not valid json at all"
 
@@ -168,7 +178,9 @@ async def test_score_candidate_handles_malformed_model_output(monkeypatch, sampl
         await score_candidate(sample_profile)
 
 
-async def test_score_candidate_defaults_bad_red_flag_status(monkeypatch, sample_profile):
+async def test_score_candidate_defaults_bad_red_flag_status(
+    monkeypatch, sample_profile
+):
     async def fake_generate_json(system_prompt, user_prompt):
         return _sample_model_response({"red_flag_status": "definitely fine trust me"})
 

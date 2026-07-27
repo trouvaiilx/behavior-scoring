@@ -2,9 +2,10 @@
 Lightweight SQLite persistence layer.
 
 Every scoring run is stored with its rubric version, model used, raw model
-output, and timestamp — this is the minimal audit trail: enough to trace 
+output, and timestamp — this is the minimal audit trail: enough to trace
 back any score to exactly what produced it.
 """
+
 import json
 import sqlite3
 from datetime import datetime, timezone
@@ -47,26 +48,44 @@ def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
         # Migrations for DBs created before these columns existed.
-        existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(scores)")}
+        existing_cols = {
+            row["name"] for row in conn.execute("PRAGMA table_info(scores)")
+        }
         if "overall_summary" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN overall_summary TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN overall_summary TEXT NOT NULL DEFAULT ''"
+            )
         if "rubric_hash" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN rubric_hash TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN rubric_hash TEXT NOT NULL DEFAULT ''"
+            )
         if "job_role" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN job_role TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN job_role TEXT NOT NULL DEFAULT ''"
+            )
         if "human_review_status" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN human_review_status TEXT NOT NULL DEFAULT 'pending'")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN human_review_status TEXT NOT NULL DEFAULT 'pending'"
+            )
         if "human_review_notes" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN human_review_notes TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN human_review_notes TEXT NOT NULL DEFAULT ''"
+            )
         if "reviewed_at" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''"
+            )
 
 
 def save_score(result: ScoreResult) -> int:
     created_at = datetime.now(timezone.utc).isoformat()
     hr_status = result.human_review.status if result.human_review else "pending"
     hr_notes = result.human_review.notes if result.human_review else ""
-    hr_reviewed_at = result.human_review.reviewed_at if result.human_review and result.human_review.reviewed_at else ""
+    hr_reviewed_at = (
+        result.human_review.reviewed_at
+        if result.human_review and result.human_review.reviewed_at
+        else ""
+    )
 
     with _connect() as conn:
         cur = conn.execute(
@@ -113,7 +132,9 @@ def _build_where_clause(
     params = []
 
     if search and search.strip():
-        conditions.append("(candidate_label LIKE ? OR job_role LIKE ? OR overall_summary LIKE ?)")
+        conditions.append(
+            "(candidate_label LIKE ? OR job_role LIKE ? OR overall_summary LIKE ?)"
+        )
         term = f"%{search.strip()}%"
         params.extend([term, term, term])
 
@@ -155,7 +176,12 @@ def list_scores(
     sort_by: str = "id",
     sort_order: str = "desc",
 ) -> list[dict]:
-    allowed_sort_cols = {"id": "id", "composite_score": "composite_score", "created_at": "created_at", "candidate_label": "candidate_label"}
+    allowed_sort_cols = {
+        "id": "id",
+        "composite_score": "composite_score",
+        "created_at": "created_at",
+        "candidate_label": "candidate_label",
+    }
     sort_col = allowed_sort_cols.get(sort_by, "id")
     order = "ASC" if sort_order.lower() == "asc" else "DESC"
 
@@ -168,7 +194,9 @@ def list_scores(
         human_review_status=human_review_status,
     )
 
-    query = f"SELECT * FROM scores{where_sql} ORDER BY {sort_col} {order} LIMIT ? OFFSET ?"
+    query = (
+        f"SELECT * FROM scores{where_sql} ORDER BY {sort_col} {order} LIMIT ? OFFSET ?"
+    )
     params.extend([limit, offset])
 
     with _connect() as conn:
@@ -245,11 +273,27 @@ def get_analytics_summary() -> dict:
     if not rows:
         return {
             "total_candidates": 0,
-            "composite_score_stats": {"avg": 0.0, "median": 0.0, "min": 0.0, "max": 0.0},
+            "composite_score_stats": {
+                "avg": 0.0,
+                "median": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+            },
             "red_flag_breakdown": {"pass": 0, "review": 0, "fail": 0},
-            "human_review_breakdown": {"pending": 0, "approved": 0, "rejected": 0, "overridden": 0},
+            "human_review_breakdown": {
+                "pending": 0,
+                "approved": 0,
+                "rejected": 0,
+                "overridden": 0,
+            },
             "excluded_attributes_counts": {},
-            "score_buckets": {"0_to_20": 0, "21_to_40": 0, "41_to_60": 0, "61_to_80": 0, "81_to_100": 0},
+            "score_buckets": {
+                "0_to_20": 0,
+                "21_to_40": 0,
+                "41_to_60": 0,
+                "61_to_80": 0,
+                "81_to_100": 0,
+            },
         }
 
     scores_list = [r["composite_score"] for r in rows]
@@ -262,12 +306,20 @@ def get_analytics_summary() -> dict:
     if total % 2 == 1:
         median_score = scores_list[total // 2]
     else:
-        median_score = round((scores_list[total // 2 - 1] + scores_list[total // 2]) / 2.0, 1)
+        median_score = round(
+            (scores_list[total // 2 - 1] + scores_list[total // 2]) / 2.0, 1
+        )
 
     red_flag_counts = {"pass": 0, "review": 0, "fail": 0}
     human_review_counts = {"pending": 0, "approved": 0, "rejected": 0, "overridden": 0}
     excluded_counts: dict[str, int] = {}
-    buckets = {"0_to_20": 0, "21_to_40": 0, "41_to_60": 0, "61_to_80": 0, "81_to_100": 0}
+    buckets = {
+        "0_to_20": 0,
+        "21_to_40": 0,
+        "41_to_60": 0,
+        "61_to_80": 0,
+        "81_to_100": 0,
+    }
 
     for r in rows:
         rf_status = r["red_flag_status"]
@@ -285,7 +337,7 @@ def get_analytics_summary() -> dict:
             attrs = json.loads(r["excluded_attributes_json"])
             for attr in attrs:
                 excluded_counts[attr] = excluded_counts.get(attr, 0) + 1
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             pass
 
         # buckets
@@ -331,4 +383,3 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     }
     d["job_role"] = d.get("job_role", "") or ""
     return d
-

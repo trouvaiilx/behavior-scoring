@@ -7,21 +7,26 @@ composite score. This keeps the LLM as the "nuanced dimension" scorer while
 the composite math and rubric weights stay deterministic and auditable in
 Python.
 """
+
 import json
 import logging
 import re
 
 from app.config import OLLAMA_MODEL, RUBRIC_VERSION
-from app.ollama_client import generate_json, OllamaError
+from app.ollama_client import OllamaError, generate_json
 from app.rubric import (
     DIMENSIONS,
     EXCLUDED_ATTRIBUTES,
     IncompleteScoreError,
-    RED_FLAG_KEY,
     rubric_hash,
     weighted_composite,
 )
-from app.schemas import CandidateProfileInput, DimensionScore, RedFlagResult, ScoreResult
+from app.schemas import (
+    CandidateProfileInput,
+    DimensionScore,
+    RedFlagResult,
+    ScoreResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,13 +42,58 @@ _VALID_RED_FLAG_STATUSES = {"pass", "review", "fail"}
 # (they just add a review flag); false negatives are the real risk, so this
 # is intentionally coarse rather than clever.
 _EXCLUDED_ATTRIBUTE_KEYWORDS = {
-    "religion": ["religion", "religious", "christian", "muslim", "jewish", "hindu", "buddhist", "atheist"],
+    "religion": [
+        "religion",
+        "religious",
+        "christian",
+        "muslim",
+        "jewish",
+        "hindu",
+        "buddhist",
+        "atheist",
+    ],
     "ethnicity or race": ["ethnicity", "ethnic", "race", "racial", "nationality"],
-    "political affiliation or opinion": ["political", "politics", "republican", "democrat", "left-wing", "right-wing", "conservative", "liberal"],
-    "marital or family status, pregnancy": ["married", "marriage", "pregnant", "pregnancy", "children", "divorced"],
-    "disability or health status": ["disability", "disabled", "illness", "diagnosis", "medical condition", "mental health"],
-    "sexual orientation or gender identity": ["gay", "lesbian", "bisexual", "transgender", "sexual orientation", "gender identity", "lgbtq"],
-    "age (beyond legally relevant minimum working age)": ["years old", "age of", "elderly", "young age"],
+    "political affiliation or opinion": [
+        "political",
+        "politics",
+        "republican",
+        "democrat",
+        "left-wing",
+        "right-wing",
+        "conservative",
+        "liberal",
+    ],
+    "marital or family status, pregnancy": [
+        "married",
+        "marriage",
+        "pregnant",
+        "pregnancy",
+        "children",
+        "divorced",
+    ],
+    "disability or health status": [
+        "disability",
+        "disabled",
+        "illness",
+        "diagnosis",
+        "medical condition",
+        "mental health",
+    ],
+    "sexual orientation or gender identity": [
+        "gay",
+        "lesbian",
+        "bisexual",
+        "transgender",
+        "sexual orientation",
+        "gender identity",
+        "lgbtq",
+    ],
+    "age (beyond legally relevant minimum working age)": [
+        "years old",
+        "age of",
+        "elderly",
+        "young age",
+    ],
 }
 
 
@@ -53,7 +103,7 @@ class ScoringError(Exception):
 
 def _build_system_prompt() -> str:
     dim_lines = "\n".join(
-        f'- "{d["key"]}" ({d["label"]}, weight {d["weight"]*100:.0f}%): {d["description"]}'
+        f'- "{d["key"]}" ({d["label"]}, weight {d["weight"] * 100:.0f}%): {d["description"]}'
         for d in DIMENSIONS
     )
     excluded_lines = "\n".join(f"- {a}" for a in EXCLUDED_ATTRIBUTES)
@@ -147,7 +197,9 @@ def _extract_json(raw_text: str) -> dict:
                 f"Model output was not valid JSON: {e}\nRaw output: {raw_text[:1000]}"
             ) from e
 
-    raise ScoringError(f"Model output contained no JSON object.\nRaw output: {raw_text[:1000]}")
+    raise ScoringError(
+        f"Model output contained no JSON object.\nRaw output: {raw_text[:1000]}"
+    )
 
 
 def _safe_score(raw_value, dimension_key: str) -> float:
@@ -155,7 +207,10 @@ def _safe_score(raw_value, dimension_key: str) -> float:
     missing values become 0 and are logged, rather than raising and
     failing the whole request over one bad field."""
     if raw_value is None:
-        logger.warning("Dimension '%s' had no score in model output; defaulting to 0.", dimension_key)
+        logger.warning(
+            "Dimension '%s' had no score in model output; defaulting to 0.",
+            dimension_key,
+        )
         return 0.0
     try:
         value = float(raw_value)
@@ -176,7 +231,10 @@ def _safe_red_flag_status(raw_status) -> str:
     silently passed through to the DB/UI."""
     if isinstance(raw_status, str) and raw_status.lower() in _VALID_RED_FLAG_STATUSES:
         return raw_status.lower()
-    logger.warning("Model returned an unrecognized red_flag_status (%r); defaulting to 'review'.", raw_status)
+    logger.warning(
+        "Model returned an unrecognized red_flag_status (%r); defaulting to 'review'.",
+        raw_status,
+    )
     return "review"
 
 
@@ -197,18 +255,25 @@ async def score_candidate(profile: CandidateProfileInput) -> ScoreResult:
     system_prompt = _build_system_prompt()
     user_prompt = _build_user_prompt(profile)
 
-    logger.info("Scoring candidate '%s' with model '%s'.", profile.candidate_label, OLLAMA_MODEL)
+    logger.info(
+        "Scoring candidate '%s' with model '%s'.", profile.candidate_label, OLLAMA_MODEL
+    )
 
     try:
         raw_output = await generate_json(system_prompt, user_prompt)
     except OllamaError as e:
-        logger.error("Ollama call failed for candidate '%s': %s", profile.candidate_label, e)
+        logger.error(
+            "Ollama call failed for candidate '%s': %s", profile.candidate_label, e
+        )
         raise ScoringError(str(e)) from e
 
     try:
         parsed = _extract_json(raw_output)
     except ScoringError:
-        logger.error("Could not parse model output as JSON for candidate '%s'.", profile.candidate_label)
+        logger.error(
+            "Could not parse model output as JSON for candidate '%s'.",
+            profile.candidate_label,
+        )
         raise
 
     raw_dim_scores = parsed.get("dimension_scores", {})
@@ -235,7 +300,9 @@ async def score_candidate(profile: CandidateProfileInput) -> ScoreResult:
         # _safe_score's 0-default), so this should be unreachable in
         # practice -- but if the rubric itself changes shape mid-flight,
         # fail loudly rather than silently averaging in a 0.
-        logger.error("Incomplete score for candidate '%s': %s", profile.candidate_label, e)
+        logger.error(
+            "Incomplete score for candidate '%s': %s", profile.candidate_label, e
+        )
         raise ScoringError(str(e)) from e
 
     red_flag = RedFlagResult(
@@ -252,7 +319,7 @@ async def score_candidate(profile: CandidateProfileInput) -> ScoreResult:
     # a human checks it.
     backstop_text = [parsed.get("overall_summary", "")] + list(raw_rationales.values())
     backstop_hits = _keyword_backstop_hits(backstop_text)
-    newly_detected = backstop_hits - set(a.lower() for a in excluded_from_model)
+    newly_detected = backstop_hits - {a.lower() for a in excluded_from_model}
     if newly_detected:
         logger.warning(
             "Keyword backstop found possible excluded-attribute language not "

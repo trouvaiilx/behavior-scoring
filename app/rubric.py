@@ -34,8 +34,7 @@ DIMENSIONS = [
         "label": "Communication Quality",
         "weight": 0.27,
         "description": (
-            "Clarity, tone, and professionalism of public posts/comments. "
-            "Score 0-100."
+            "Clarity, tone, and professionalism of public posts/comments. Score 0-100."
         ),
     },
     {

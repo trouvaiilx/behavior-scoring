@@ -5,8 +5,10 @@ All values can be overridden via a `.env` file in the project root
 (copy `.env.example` to `.env` and edit it) or via real environment
 variables. Nothing here should be hardcoded for production use.
 """
+
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load .env file if present (does nothing if it doesn't exist)
@@ -56,7 +58,11 @@ MAX_FIELD_CHARS = int(os.getenv("MAX_FIELD_CHARS", "8000"))
 # localhost, set CORS_ALLOW_ORIGINS to an explicit comma-separated list.
 # ---------------------------------------------------------------------------
 _cors_env = os.getenv("CORS_ALLOW_ORIGINS", "*")
-CORS_ALLOW_ORIGINS = ["*"] if _cors_env == "*" else [o.strip() for o in _cors_env.split(",") if o.strip()]
+CORS_ALLOW_ORIGINS = (
+    ["*"]
+    if _cors_env == "*"
+    else [o.strip() for o in _cors_env.split(",") if o.strip()]
+)
 
 # ---------------------------------------------------------------------------
 # Pagination defaults for GET /api/scores

@@ -7,6 +7,7 @@ Usage (with the backend already running via `uvicorn app.main:app --reload`):
 
 Requires the `requests` package: pip install requests
 """
+
 import json
 import sys
 from pathlib import Path
@@ -33,7 +34,9 @@ def main():
         try:
             resp = requests.post(API_URL, json=profile, timeout=180)
         except requests.exceptions.ConnectionError:
-            print(f"{profile['candidate_label']:<32} Could not connect. Is the backend running?")
+            print(
+                f"{profile['candidate_label']:<32} Could not connect. Is the backend running?"
+            )
             continue
 
         if resp.status_code != 200:
@@ -42,7 +45,9 @@ def main():
             continue
 
         result = resp.json()
-        note = "excluded attrs noticed" if result["excluded_attributes_detected"] else ""
+        note = (
+            "excluded attrs noticed" if result["excluded_attributes_detected"] else ""
+        )
         print(
             f"{result['candidate_label']:<32} "
             f"{result['composite_score']:>9} "
