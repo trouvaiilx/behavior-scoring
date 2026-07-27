@@ -30,6 +30,9 @@ OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "120"))
 # ---------------------------------------------------------------------------
 DATABASE_PATH = BASE_DIR / os.getenv("DATABASE_PATH", "data/scores.db")
 
+# Development-only shared secret for the prototype token endpoint.
+API_SECRET_KEY = "dev-secret-key-change-in-prod"
+
 # ---------------------------------------------------------------------------
 # Rubric versioning (bump this whenever rubric.py weights/dimensions change,
 # so stored scores can always be traced back to the rubric version that

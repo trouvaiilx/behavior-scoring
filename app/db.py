@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.config import DATABASE_PATH
-from app.schemas import ScoreResult
+from app.schemas import CandidateProfileInput, ScoreResult
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS scores (
@@ -44,6 +44,20 @@ CREATE TABLE IF NOT EXISTS webhooks (
 );
 """
 
+CANDIDATES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS candidates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_label TEXT NOT NULL,
+    job_role TEXT NOT NULL DEFAULT '',
+    cv_claims TEXT NOT NULL DEFAULT '',
+    profile_about TEXT NOT NULL DEFAULT '',
+    posts_sample TEXT NOT NULL DEFAULT '',
+    comments_sample TEXT NOT NULL DEFAULT '',
+    network_notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+"""
+
 
 def _connect() -> sqlite3.Connection:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
@@ -56,6 +70,7 @@ def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
         conn.execute(WEBHOOKS_SCHEMA)
+        conn.execute(CANDIDATES_SCHEMA)
         # Migrations for DBs created before these columns existed.
         existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(scores)")}
         if "overall_summary" not in existing_cols:
@@ -99,6 +114,33 @@ def list_webhooks() -> list[dict]:
             }
             for row in rows
         ]
+
+
+def insert_candidates(profiles: list[CandidateProfileInput]) -> list[int]:
+    created_at = datetime.now(timezone.utc).isoformat()
+    candidate_ids = []
+    with _connect() as conn:
+        for profile in profiles:
+            cur = conn.execute(
+                """
+                INSERT INTO candidates (
+                    candidate_label, job_role, cv_claims, profile_about,
+                    posts_sample, comments_sample, network_notes, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    profile.candidate_label,
+                    profile.job_role,
+                    profile.cv_claims,
+                    profile.profile_about,
+                    profile.posts_sample,
+                    profile.comments_sample,
+                    profile.network_notes,
+                    created_at,
+                ),
+            )
+            candidate_ids.append(cur.lastrowid)
+    return candidate_ids
 
 
 def save_score(result: ScoreResult) -> int:

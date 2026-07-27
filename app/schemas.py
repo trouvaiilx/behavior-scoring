@@ -1,7 +1,8 @@
+import json
 from typing import Literal, Optional
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.config import MAX_FIELD_CHARS
 
@@ -72,6 +73,41 @@ class CandidateProfileInput(BaseModel):
         return v.strip() if v else v
 
 
+class CandidateImportRequest(BaseModel):
+    profiles: list[CandidateProfileInput] = Field(default_factory=list, max_length=100)
+    json_file: Optional[str] = Field(default=None, max_length=MAX_FIELD_CHARS * 100)
+
+    @model_validator(mode="after")
+    def _load_json_file_profiles(self):
+        if self.json_file is None:
+            if not self.profiles:
+                raise ValueError("profiles cannot be empty")
+            return self
+
+        if self.profiles:
+            raise ValueError("provide either profiles or json_file, not both")
+
+        try:
+            payload = json.loads(self.json_file)
+        except json.JSONDecodeError as exc:
+            raise ValueError("json_file must contain valid JSON") from exc
+
+        if isinstance(payload, dict):
+            payload = payload.get("profiles")
+        if not isinstance(payload, list) or not payload:
+            raise ValueError("json_file must contain a non-empty profile list")
+        if len(payload) > 100:
+            raise ValueError("a maximum of 100 profiles can be imported at once")
+
+        self.profiles = [CandidateProfileInput.model_validate(profile) for profile in payload]
+        return self
+
+
+class CandidateImportResponse(BaseModel):
+    imported_count: int
+    candidate_ids: list[int]
+
+
 class DimensionScore(BaseModel):
     key: str
     label: str
@@ -93,6 +129,16 @@ class HumanReviewInfo(BaseModel):
 class HumanReviewUpdate(BaseModel):
     status: HumanReviewStatus
     notes: str = Field(default="", max_length=1000)
+
+
+class TokenRequest(BaseModel):
+    client_id: str = Field(..., min_length=1, max_length=200)
+    client_secret: str = Field(..., min_length=1, max_length=512)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
 
 
 class WebhookRegisterRequest(BaseModel):

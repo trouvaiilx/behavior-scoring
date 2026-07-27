@@ -2,6 +2,7 @@ import csv
 import io
 import json
 import logging
+import secrets
 import uuid
 from contextlib import asynccontextmanager
 from typing import Literal, Optional
@@ -11,16 +12,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app import db, ollama_client
-from app.config import CORS_ALLOW_ORIGINS, DEFAULT_SCORES_LIMIT, MAX_SCORES_LIMIT, RUBRIC_VERSION
+from app.config import API_SECRET_KEY, CORS_ALLOW_ORIGINS, DEFAULT_SCORES_LIMIT, MAX_SCORES_LIMIT, RUBRIC_VERSION
 from app.rubric import DIMENSIONS, EXCLUDED_ATTRIBUTES, RED_FLAG_WEIGHT_NOTE, rubric_hash
 from app.schemas import (
     AnalyticsSummaryResponse,
     BatchJobStatusResponse,
     BatchScoreRequest,
     CandidateComparisonResponse,
+    CandidateImportRequest,
+    CandidateImportResponse,
     CandidateProfileInput,
     HumanReviewUpdate,
     ScoreResult,
+    TokenRequest,
+    TokenResponse,
     WebhookRegisterRequest,
     WebhookResponse,
 )
@@ -121,6 +126,23 @@ async def create_score(profile: CandidateProfileInput):
     result.id = score_id
     logger.info("Saved score run id=%s for candidate '%s'.", score_id, profile.candidate_label)
     return result
+
+
+@app.post("/api/auth/token", response_model=TokenResponse)
+def create_token(credentials: TokenRequest):
+    if not secrets.compare_digest(credentials.client_secret, API_SECRET_KEY):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid client credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return TokenResponse(access_token=API_SECRET_KEY)
+
+
+@app.post("/api/candidates/import", response_model=CandidateImportResponse)
+def import_candidates(request: CandidateImportRequest):
+    candidate_ids = db.insert_candidates(request.profiles)
+    return CandidateImportResponse(imported_count=len(candidate_ids), candidate_ids=candidate_ids)
 
 
 @app.post("/api/webhooks", response_model=WebhookResponse, status_code=201)
