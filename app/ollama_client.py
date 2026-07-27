@@ -31,7 +31,7 @@ async def check_connection() -> dict:
             data = resp.json()
             models = [m.get("name", "") for m in data.get("models", [])]
             model_found = any(
-                OLLAMA_MODEL == m or m.startswith(OLLAMA_MODEL + ":") for m in models
+                m == OLLAMA_MODEL or m.startswith(OLLAMA_MODEL + ":") for m in models
             )
             return {
                 "reachable": True,
@@ -39,7 +39,7 @@ async def check_connection() -> dict:
                 "model_available_locally": model_found,
                 "installed_models": models,
             }
-    except Exception as e:  # noqa: BLE001 - surfaced to the health endpoint
+    except Exception as e:
         return {
             "reachable": False,
             "configured_model": OLLAMA_MODEL,

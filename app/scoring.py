@@ -375,7 +375,7 @@ async def score_candidate(profile: CandidateProfileInput) -> ScoreResult:
     # Anything caught here that the model didn't already report gets added
     # to the list AND forces the red flag status to at least "review", so
     # a human checks it.
-    backstop_text = [parsed.get("overall_summary", "")] + list(raw_rationales.values())
+    backstop_text = [parsed.get("overall_summary", ""), *raw_rationales.values()]
     backstop_hits = _keyword_backstop_hits(backstop_text)
     newly_detected = backstop_hits - {a.lower() for a in excluded_from_model}
     if newly_detected:

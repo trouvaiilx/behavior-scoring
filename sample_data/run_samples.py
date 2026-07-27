@@ -11,9 +11,9 @@ Requires the `requests` package: pip install requests
 
 import argparse
 import json
+from pathlib import Path
 import sys
 import time
-from pathlib import Path
 
 try:
     import requests
@@ -71,7 +71,9 @@ def run_sequential(base_url: str, profiles: list[dict]):
 
 def run_batch(base_url: str, profiles: list[dict]):
     batch_url = f"{base_url.rstrip('/')}/api/scores/batch"
-    print(f"Submitting {len(profiles)} sample profiles as a batch job to {batch_url}...")
+    print(
+        f"Submitting {len(profiles)} sample profiles as a batch job to {batch_url}..."
+    )
 
     try:
         resp = requests.post(batch_url, json={"profiles": profiles}, timeout=30)
@@ -108,7 +110,9 @@ def run_batch(base_url: str, profiles: list[dict]):
                 st = res["status"]
                 sr = res.get("score_result")
                 comp_str = f"{sr['composite_score']:>9.1f}" if sr else "     N/A"
-                rf_str = sr["red_flag"]["status"] if sr else (res.get("error") or "err")[:8]
+                rf_str = (
+                    sr["red_flag"]["status"] if sr else (res.get("error") or "err")[:8]
+                )
                 print(f"{lbl:<40} {st:<10} {comp_str}  {rf_str}")
             break
         time.sleep(2)
