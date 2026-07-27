@@ -2,13 +2,14 @@
 Lightweight SQLite persistence layer.
 
 Every scoring run is stored with its rubric version, model used, raw model
-output, and timestamp — this is the minimal audit trail: enough to trace 
+output, and timestamp — this is the minimal audit trail: enough to trace
 back any score to exactly what produced it.
 """
+
+from datetime import UTC, datetime, timedelta, timezone
 import json
-import sqlite3
-from datetime import datetime, timezone
 from pathlib import Path
+import sqlite3
 
 from app.config import DATABASE_PATH
 from app.schemas import CandidateProfileInput, ScoreResult
@@ -58,11 +59,30 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 """
 
+BATCH_SCHEMA = """
+CREATE TABLE IF NOT EXISTS batch_jobs (
+    batch_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'processing',
+    total_items INTEGER NOT NULL,
+    completed_items INTEGER NOT NULL DEFAULT 0,
+    failed_items INTEGER NOT NULL DEFAULT 0,
+    results_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"""
+
 
 def _connect() -> sqlite3.Connection:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
+    # WAL mode lets readers (e.g. someone browsing history) proceed without
+    # blocking on a concurrent writer (e.g. a batch job saving results),
+    # and busy_timeout makes a writer retry for a bit instead of
+    # immediately raising "database is locked" under contention.
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
 
@@ -71,20 +91,35 @@ def init_db() -> None:
         conn.execute(SCHEMA)
         conn.execute(WEBHOOKS_SCHEMA)
         conn.execute(CANDIDATES_SCHEMA)
+        conn.execute(BATCH_SCHEMA)
         # Migrations for DBs created before these columns existed.
-        existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(scores)")}
+        existing_cols = {
+            row["name"] for row in conn.execute("PRAGMA table_info(scores)")
+        }
         if "overall_summary" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN overall_summary TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN overall_summary TEXT NOT NULL DEFAULT ''"
+            )
         if "rubric_hash" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN rubric_hash TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN rubric_hash TEXT NOT NULL DEFAULT ''"
+            )
         if "job_role" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN job_role TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN job_role TEXT NOT NULL DEFAULT ''"
+            )
         if "human_review_status" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN human_review_status TEXT NOT NULL DEFAULT 'pending'")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN human_review_status TEXT NOT NULL DEFAULT 'pending'"
+            )
         if "human_review_notes" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN human_review_notes TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN human_review_notes TEXT NOT NULL DEFAULT ''"
+            )
         if "reviewed_at" not in existing_cols:
-            conn.execute("ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''")
+            conn.execute(
+                "ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''"
+            )
 
 
 def insert_webhook(url: str, events: list[str]) -> dict:
@@ -144,10 +179,14 @@ def insert_candidates(profiles: list[CandidateProfileInput]) -> list[int]:
 
 
 def save_score(result: ScoreResult) -> int:
-    created_at = datetime.now(timezone.utc).isoformat()
+    created_at = datetime.now(UTC).isoformat()
     hr_status = result.human_review.status if result.human_review else "pending"
     hr_notes = result.human_review.notes if result.human_review else ""
-    hr_reviewed_at = result.human_review.reviewed_at if result.human_review and result.human_review.reviewed_at else ""
+    hr_reviewed_at = (
+        result.human_review.reviewed_at
+        if result.human_review and result.human_review.reviewed_at
+        else ""
+    )
 
     with _connect() as conn:
         cur = conn.execute(
@@ -194,7 +233,9 @@ def _build_where_clause(
     params = []
 
     if search and search.strip():
-        conditions.append("(candidate_label LIKE ? OR job_role LIKE ? OR overall_summary LIKE ?)")
+        conditions.append(
+            "(candidate_label LIKE ? OR job_role LIKE ? OR overall_summary LIKE ?)"
+        )
         term = f"%{search.strip()}%"
         params.extend([term, term, term])
 
@@ -236,7 +277,12 @@ def list_scores(
     sort_by: str = "id",
     sort_order: str = "desc",
 ) -> list[dict]:
-    allowed_sort_cols = {"id": "id", "composite_score": "composite_score", "created_at": "created_at", "candidate_label": "candidate_label"}
+    allowed_sort_cols = {
+        "id": "id",
+        "composite_score": "composite_score",
+        "created_at": "created_at",
+        "candidate_label": "candidate_label",
+    }
     sort_col = allowed_sort_cols.get(sort_by, "id")
     order = "ASC" if sort_order.lower() == "asc" else "DESC"
 
@@ -249,7 +295,9 @@ def list_scores(
         human_review_status=human_review_status,
     )
 
-    query = f"SELECT * FROM scores{where_sql} ORDER BY {sort_col} {order} LIMIT ? OFFSET ?"
+    query = (
+        f"SELECT * FROM scores{where_sql} ORDER BY {sort_col} {order} LIMIT ? OFFSET ?"
+    )
     params.extend([limit, offset])
 
     with _connect() as conn:
@@ -298,7 +346,7 @@ def get_scores_by_ids(score_ids: list[int]) -> list[dict]:
 
 
 def update_human_review(score_id: int, status: str, notes: str) -> dict | None:
-    reviewed_at = datetime.now(timezone.utc).isoformat()
+    reviewed_at = datetime.now(UTC).isoformat()
     with _connect() as conn:
         cur = conn.execute(
             """
@@ -326,11 +374,27 @@ def get_analytics_summary() -> dict:
     if not rows:
         return {
             "total_candidates": 0,
-            "composite_score_stats": {"avg": 0.0, "median": 0.0, "min": 0.0, "max": 0.0},
+            "composite_score_stats": {
+                "avg": 0.0,
+                "median": 0.0,
+                "min": 0.0,
+                "max": 0.0,
+            },
             "red_flag_breakdown": {"pass": 0, "review": 0, "fail": 0},
-            "human_review_breakdown": {"pending": 0, "approved": 0, "rejected": 0, "overridden": 0},
+            "human_review_breakdown": {
+                "pending": 0,
+                "approved": 0,
+                "rejected": 0,
+                "overridden": 0,
+            },
             "excluded_attributes_counts": {},
-            "score_buckets": {"0_to_20": 0, "21_to_40": 0, "41_to_60": 0, "61_to_80": 0, "81_to_100": 0},
+            "score_buckets": {
+                "0_to_20": 0,
+                "21_to_40": 0,
+                "41_to_60": 0,
+                "61_to_80": 0,
+                "81_to_100": 0,
+            },
         }
 
     scores_list = [r["composite_score"] for r in rows]
@@ -343,12 +407,20 @@ def get_analytics_summary() -> dict:
     if total % 2 == 1:
         median_score = scores_list[total // 2]
     else:
-        median_score = round((scores_list[total // 2 - 1] + scores_list[total // 2]) / 2.0, 1)
+        median_score = round(
+            (scores_list[total // 2 - 1] + scores_list[total // 2]) / 2.0, 1
+        )
 
     red_flag_counts = {"pass": 0, "review": 0, "fail": 0}
     human_review_counts = {"pending": 0, "approved": 0, "rejected": 0, "overridden": 0}
     excluded_counts: dict[str, int] = {}
-    buckets = {"0_to_20": 0, "21_to_40": 0, "41_to_60": 0, "61_to_80": 0, "81_to_100": 0}
+    buckets = {
+        "0_to_20": 0,
+        "21_to_40": 0,
+        "41_to_60": 0,
+        "61_to_80": 0,
+        "81_to_100": 0,
+    }
 
     for r in rows:
         rf_status = r["red_flag_status"]
@@ -366,7 +438,7 @@ def get_analytics_summary() -> dict:
             attrs = json.loads(r["excluded_attributes_json"])
             for attr in attrs:
                 excluded_counts[attr] = excluded_counts.get(attr, 0) + 1
-        except Exception:
+        except (json.JSONDecodeError, TypeError):
             pass
 
         # buckets
@@ -395,6 +467,100 @@ def get_analytics_summary() -> dict:
         "excluded_attributes_counts": excluded_counts,
         "score_buckets": buckets,
     }
+
+
+def create_batch_job(batch_id: str, total_items: int) -> dict:
+    now = datetime.now(UTC).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO batch_jobs (
+                batch_id, status, total_items, completed_items, failed_items,
+                results_json, created_at, updated_at
+            ) VALUES (?, 'processing', ?, 0, 0, '[]', ?, ?)
+            """,
+            (batch_id, total_items, now, now),
+        )
+    return get_batch_job(batch_id)
+
+
+def get_batch_job(batch_id: str) -> dict | None:
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM batch_jobs WHERE batch_id = ?", (batch_id,)
+        ).fetchone()
+        return _batch_row_to_dict(row) if row else None
+
+
+def append_batch_result(batch_id: str, item_result: dict, succeeded: bool) -> None:
+    """Appends one item's result to a batch job's results list and bumps
+    its completed/failed counters.
+
+    This is a read-modify-write under a single connection, which would be
+    unsafe against concurrent writers to the *same* row -- but each batch
+    job is only ever advanced by its own single background task (see
+    app/main.py::_process_batch_job), one item at a time, so there is
+    never more than one writer per batch_id at once. Different batch jobs
+    write to different rows and don't interact.
+    """
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            SELECT results_json, completed_items, failed_items
+            FROM batch_jobs WHERE batch_id = ?
+            """,
+            (batch_id,),
+        ).fetchone()
+        if row is None:
+            return
+
+        results = json.loads(row["results_json"])
+        results.append(item_result)
+        completed = row["completed_items"] + (1 if succeeded else 0)
+        failed = row["failed_items"] + (0 if succeeded else 1)
+
+        conn.execute(
+            """
+            UPDATE batch_jobs
+            SET results_json = ?, completed_items = ?, failed_items = ?, updated_at = ?
+            WHERE batch_id = ?
+            """,
+            (
+                json.dumps(results),
+                completed,
+                failed,
+                datetime.now(UTC).isoformat(),
+                batch_id,
+            ),
+        )
+
+
+def finalize_batch_job(batch_id: str, status: str) -> None:
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE batch_jobs SET status = ?, updated_at = ? WHERE batch_id = ?",
+            (status, datetime.now(UTC).isoformat(), batch_id),
+        )
+
+
+def cleanup_old_batch_jobs(max_age_hours: int = 24) -> int:
+    """Deletes batch job rows whose created_at is older than max_age_hours.
+
+    Called opportunistically (e.g. each time a new batch is submitted)
+    rather than via a separate scheduler, so the table can't grow
+    unbounded over the life of a long-running server without adding any
+    new infrastructure. Returns the number of rows deleted.
+    """
+    cutoff = (datetime.now(UTC) - timedelta(hours=max_age_hours)).isoformat()
+    with _connect() as conn:
+        cur = conn.execute("DELETE FROM batch_jobs WHERE created_at < ?", (cutoff,))
+        return cur.rowcount
+
+
+def _batch_row_to_dict(row: sqlite3.Row) -> dict:
+    d = dict(row)
+    d["results"] = json.loads(d.pop("results_json"))
+    return d
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:

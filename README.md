@@ -99,6 +99,10 @@ C:\Users\Yuuji\behavior-scoring\
     test_rubric.py
     test_scoring.py
   data\                (created automatically on first run)
+                        (scores.db, plus scores.db-wal / scores.db-shm
+                        while the app is running — SQLite's WAL-mode
+                        sidecar files; safe to leave in place, they get
+                        folded back into scores.db on clean shutdown)
   .env.example
   pytest.ini
   README.md
@@ -197,6 +201,13 @@ output — visible in the "Past Runs" table on the test page, or via
 | POST   | `/api/score`                 | Score a candidate profile (see`CandidateProfileInput` in `app/schemas.py`)                  |
 | GET    | `/api/scores?limit=&offset=` | List past scoring runs, paginated. Returns`{results, total, limit, offset}`                   |
 | GET    | `/api/scores/{id}`           | Get one past run in full detail, including raw model output                                     |
+| PATCH  | `/api/scores/{id}/review`    | Update human review status (`pending`/`approved`/`rejected`/`overridden`) and notes         |
+| DELETE | `/api/scores/{id}`           | Delete a single past run                                                                         |
+| GET    | `/api/scores/analytics`      | Aggregate stats across all runs (score distribution, red-flag/review breakdowns)                 |
+| GET    | `/api/scores/export`         | Export past runs as CSV or JSON (`?format=csv\|json`, plus the same filters as `/api/scores`) |
+| GET    | `/api/scores/compare?ids=`   | Compare multiple past runs by ID (comma-separated), with per-dimension averages                  |
+| POST   | `/api/scores/batch`          | Submit up to 20 profiles to score in the background; returns a `batch_id` immediately          |
+| GET    | `/api/scores/batch/{id}`     | Poll a batch job's status/results                                                               |
 
 `GET /api/scores` returns an object, not a bare array, so pagination metadata
 (`total`) is available: `{"results": [...], "total": 42, "limit": 50, "offset": 0}`.
@@ -204,6 +215,12 @@ output — visible in the "Past Runs" table on the test page, or via
 Each score result also includes `rubric_hash`, a short content fingerprint of
 `app/rubric.py` at scoring time — this catches the case where the rubric's
 dimensions/weights change but `RUBRIC_VERSION` wasn't bumped by hand.
+
+Batch job state (`/api/scores/batch*`) is stored in the same SQLite database
+as everything else, not just kept in memory — so a batch job you submitted
+still shows its progress/results via `GET /api/scores/batch/{id}` even if the
+backend process restarted while it was running. Job rows older than 24 hours
+are cleaned up automatically the next time a new batch is submitted.
 
 ---
 
@@ -247,6 +264,17 @@ pytest
   `RUBRIC_VERSION` bumped to `0.2.0`) and is now covered by a test
   (`tests/test_rubric.py::test_total_weight_sums_to_one`) so it can't
   regress silently again.
+- **Batch/parsing reliability note:** batch job status (`/api/scores/batch*`)
+  used to live only in an in-memory dict, so it was lost on every backend
+  restart and grew unbounded over a long-running process. It's now stored
+  in SQLite alongside everything else (see `app/db.py`'s `batch_jobs`
+  table), with old job rows cleaned up automatically. Separately, the
+  fallback JSON parser in `app/scoring.py` (`_extract_json`) used to use a
+  greedy regex that could grab the wrong span of text if a model wrapped
+  its JSON output in commentary containing its own stray braces; it now
+  scans for genuinely balanced `{...}` objects instead. Both are covered by
+  tests (`tests/test_backend_features.py::test_batch_job_persists_to_db_and_tracks_failures`,
+  `tests/test_scoring.py::test_extract_json_with_braces_in_preamble_and_postamble`).
 
 ---
 

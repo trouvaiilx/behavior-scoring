@@ -20,6 +20,7 @@ class CandidateProfileInput(BaseModel):
     synthetic/sample text you write yourself. Do NOT paste in real
     candidate data scraped without consent and a validated legal basis.
     """
+
     candidate_label: str = Field(
         ...,
         min_length=1,
@@ -66,7 +67,12 @@ class CandidateProfileInput(BaseModel):
         return v
 
     @field_validator(
-        "job_role", "cv_claims", "profile_about", "posts_sample", "comments_sample", "network_notes"
+        "job_role",
+        "cv_claims",
+        "profile_about",
+        "posts_sample",
+        "comments_sample",
+        "network_notes",
     )
     @classmethod
     def _strip_text(cls, v: str) -> str:
@@ -124,7 +130,7 @@ class RedFlagResult(BaseModel):
 class HumanReviewInfo(BaseModel):
     status: HumanReviewStatus = "pending"
     notes: str = ""
-    reviewed_at: Optional[str] = None
+    reviewed_at: str | None = None
 
 
 class HumanReviewUpdate(BaseModel):
@@ -174,7 +180,7 @@ class WebhookResponse(BaseModel):
 class ScoreResult(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
-    id: Optional[int] = None
+    id: int | None = None
     candidate_label: str
     job_role: str = ""
     rubric_version: str
@@ -184,7 +190,8 @@ class ScoreResult(BaseModel):
     )
     model_used: str
     overall_summary: str = Field(
-        default="", description="Model-generated plain-language summary of the overall profile."
+        default="",
+        description="Model-generated plain-language summary of the overall profile.",
     )
     dimension_scores: list[DimensionScore]
     composite_score: float
@@ -197,7 +204,7 @@ class ScoreResult(BaseModel):
         description="Protected attributes the model noticed in the text but explicitly did NOT use to influence scoring.",
     )
     raw_model_output: str
-    created_at: Optional[str] = None
+    created_at: str | None = None
 
 
 class AnalyticsSummaryResponse(BaseModel):
@@ -211,15 +218,18 @@ class AnalyticsSummaryResponse(BaseModel):
 
 class BatchScoreRequest(BaseModel):
     profiles: list[CandidateProfileInput] = Field(
-        ..., min_length=1, max_length=20, description="List of candidate profiles to score."
+        ...,
+        min_length=1,
+        max_length=20,
+        description="List of candidate profiles to score.",
     )
 
 
 class BatchItemResult(BaseModel):
     candidate_label: str
     status: Literal["completed", "failed"]
-    score_result: Optional[ScoreResult] = None
-    error: Optional[str] = None
+    score_result: ScoreResult | None = None
+    error: str | None = None
 
 
 class BatchJobStatusResponse(BaseModel):
@@ -234,8 +244,8 @@ class BatchJobStatusResponse(BaseModel):
 class CandidateComparisonResponse(BaseModel):
     candidates: list[ScoreResult]
     dimension_averages: dict[str, float]
-    highest_scoring_candidate: Optional[str] = None
-    lowest_scoring_candidate: Optional[str] = None
+    highest_scoring_candidate: str | None = None
+    lowest_scoring_candidate: str | None = None
     red_flags_summary: dict[str, int]
 
 

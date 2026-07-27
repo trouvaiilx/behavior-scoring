@@ -1,10 +1,9 @@
-import json
-import pytest
 from fastapi.testclient import TestClient
+import pytest
 
 from app import db
 from app.main import app
-from app.schemas import CandidateProfileInput, DimensionScore, RedFlagResult, ScoreResult
+from app.schemas import DimensionScore, RedFlagResult, ScoreResult
 
 client = TestClient(app)
 
@@ -33,10 +32,30 @@ def _create_sample_score_result(
         model_used="test-model",
         overall_summary=f"Summary for {label}",
         dimension_scores=[
-            DimensionScore(key="professional_consistency", label="Professional Consistency", score=composite, rationale="OK"),
-            DimensionScore(key="communication_quality", label="Communication Quality", score=composite, rationale="OK"),
-            DimensionScore(key="domain_engagement", label="Domain Engagement", score=composite, rationale="OK"),
-            DimensionScore(key="network_signal", label="Network Signal", score=composite, rationale="OK"),
+            DimensionScore(
+                key="professional_consistency",
+                label="Professional Consistency",
+                score=composite,
+                rationale="OK",
+            ),
+            DimensionScore(
+                key="communication_quality",
+                label="Communication Quality",
+                score=composite,
+                rationale="OK",
+            ),
+            DimensionScore(
+                key="domain_engagement",
+                label="Domain Engagement",
+                score=composite,
+                rationale="OK",
+            ),
+            DimensionScore(
+                key="network_signal",
+                label="Network Signal",
+                score=composite,
+                rationale="OK",
+            ),
         ],
         composite_score=composite,
         red_flag=RedFlagResult(status=red_flag_status, rationale="Test rationale"),
@@ -93,9 +112,17 @@ def test_delete_score_api():
 
 
 def test_list_scores_filtering_search_and_sorting():
-    sid1 = db.save_score(_create_sample_score_result("alpha_candidate", 92.0, "pass", "Senior Dev"))
-    sid2 = db.save_score(_create_sample_score_result("beta_candidate", 30.0, "fail", "Junior Dev"))
-    sid3 = db.save_score(_create_sample_score_result("gamma_candidate", 65.0, "review", "QA Engineer", ["religion"]))
+    db.save_score(
+        _create_sample_score_result("alpha_candidate", 92.0, "pass", "Senior Dev")
+    )
+    db.save_score(
+        _create_sample_score_result("beta_candidate", 30.0, "fail", "Junior Dev")
+    )
+    db.save_score(
+        _create_sample_score_result(
+            "gamma_candidate", 65.0, "review", "QA Engineer", ["religion"]
+        )
+    )
 
     # Test search by label
     resp = client.get("/api/scores?search=alpha")
@@ -142,7 +169,9 @@ def test_analytics_summary_api():
 
 
 def test_export_scores_api():
-    db.save_score(_create_sample_score_result("export_test", 88.0, "pass", "Lead Architect"))
+    db.save_score(
+        _create_sample_score_result("export_test", 88.0, "pass", "Lead Architect")
+    )
 
     # Export JSON
     json_resp = client.get("/api/scores/export?format=json")
@@ -178,6 +207,7 @@ def test_candidate_comparison_api():
 
 def test_batch_score_endpoint_mock(monkeypatch):
     """Test batch endpoint structure."""
+
     async def mock_score_candidate(profile):
         return _create_sample_score_result(profile.candidate_label, 75.0, "pass")
 
@@ -200,3 +230,39 @@ def test_batch_score_endpoint_mock(monkeypatch):
     status_resp = client.get(f"/api/scores/batch/{batch_id}")
     assert status_resp.status_code == 200
     assert status_resp.json()["total_items"] == 2
+
+
+def test_batch_job_persists_to_db_and_tracks_failures(monkeypatch):
+    """Batch job state must live in SQLite (not an in-memory dict), so a
+    fresh call to db.get_batch_job -- as would happen after a process
+    restart -- still finds it, and per-item failures are recorded without
+    aborting the rest of the batch."""
+
+    async def mock_score_candidate(profile):
+        if profile.candidate_label == "will_fail":
+            raise RuntimeError("simulated scoring failure")
+        return _create_sample_score_result(profile.candidate_label, 60.0, "pass")
+
+    monkeypatch.setattr("app.main.score_candidate", mock_score_candidate)
+
+    batch_payload = {
+        "profiles": [
+            {"candidate_label": "will_succeed", "cv_claims": "Role"},
+            {"candidate_label": "will_fail", "cv_claims": "Role"},
+        ]
+    }
+
+    resp = client.post("/api/scores/batch", json=batch_payload)
+    assert resp.status_code == 200
+    batch_id = resp.json()["batch_id"]
+
+    # Read directly from the db layer, as a separate connection would --
+    # this is what makes the job durable across a server restart.
+    job = db.get_batch_job(batch_id)
+    assert job is not None
+    assert job["total_items"] == 2
+    assert job["completed_items"] == 1
+    assert job["failed_items"] == 1
+    statuses = {r["candidate_label"]: r["status"] for r in job["results"]}
+    assert statuses["will_succeed"] == "completed"
+    assert statuses["will_fail"] == "failed"

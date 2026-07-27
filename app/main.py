@@ -1,19 +1,31 @@
+from contextlib import asynccontextmanager
 import csv
 import io
 import json
 import logging
+from pathlib import Path
 import secrets
 import uuid
-from contextlib import asynccontextmanager
-from typing import Literal, Optional
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
 from app import db, ollama_client, web_search
-from app.config import API_SECRET_KEY, CORS_ALLOW_ORIGINS, DEFAULT_SCORES_LIMIT, MAX_SCORES_LIMIT, RUBRIC_VERSION
-from app.rubric import DIMENSIONS, EXCLUDED_ATTRIBUTES, RED_FLAG_WEIGHT_NOTE, rubric_hash
+from app.config import (
+    API_SECRET_KEY,
+    CORS_ALLOW_ORIGINS,
+    DEFAULT_SCORES_LIMIT,
+    MAX_SCORES_LIMIT,
+    RUBRIC_VERSION,
+)
+from app.rubric import (
+    DIMENSIONS,
+    EXCLUDED_ATTRIBUTES,
+    RED_FLAG_WEIGHT_NOTE,
+    rubric_hash,
+)
 from app.schemas import (
     AnalyticsSummaryResponse,
     BatchJobStatusResponse,
@@ -37,8 +49,6 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-_batch_store: dict[str, dict] = {}
 
 
 @asynccontextmanager
@@ -67,31 +77,46 @@ app.add_middleware(
 
 
 async def _process_batch_job(batch_id: str, profiles: list[CandidateProfileInput]):
-    job = _batch_store[batch_id]
-    job["status"] = "processing"
+    """Scores each profile in turn, persisting progress to the batch_jobs
+    table after every item (see app/db.py::append_batch_result) rather than
+    holding job state in a process-local dict. This means job status/
+    results survive a server restart, and GET /api/scores/batch/{id} always
+    reflects the last state a running process actually reached."""
     for profile in profiles:
         try:
             res = await score_candidate(profile)
             sid = db.save_score(res)
             res.id = sid
-            job["results"].append({
-                "candidate_label": profile.candidate_label,
-                "status": "completed",
-                "score_result": res.model_dump(),
-                "error": None,
-            })
-            job["completed_items"] += 1
+            db.append_batch_result(
+                batch_id,
+                {
+                    "candidate_label": profile.candidate_label,
+                    "status": "completed",
+                    "score_result": res.model_dump(),
+                    "error": None,
+                },
+                succeeded=True,
+            )
         except Exception as e:
-            logger.error("Batch item failed for candidate '%s': %s", profile.candidate_label, e)
-            job["results"].append({
-                "candidate_label": profile.candidate_label,
-                "status": "failed",
-                "score_result": None,
-                "error": str(e),
-            })
-            job["failed_items"] += 1
+            logger.error(
+                "Batch item failed for candidate '%s': %s", profile.candidate_label, e
+            )
+            db.append_batch_result(
+                batch_id,
+                {
+                    "candidate_label": profile.candidate_label,
+                    "status": "failed",
+                    "score_result": None,
+                    "error": str(e),
+                },
+                succeeded=False,
+            )
 
-    job["status"] = "completed" if job["failed_items"] < len(profiles) else "failed"
+    job = db.get_batch_job(batch_id)
+    failed_items = job["failed_items"] if job else 0
+    db.finalize_batch_job(
+        batch_id, "completed" if failed_items < len(profiles) else "failed"
+    )
 
 
 @app.get("/api/health")
@@ -115,17 +140,41 @@ def get_rubric():
     }
 
 
+SAMPLES_PATH = Path(__file__).parent.parent / "sample_data" / "sample_profiles.json"
+
+
+@app.get("/api/samples", response_model=list[CandidateProfileInput])
+def get_sample_profiles():
+    """Returns the set of curated sample profiles for quick UI pre-filling and testing."""
+    if not SAMPLES_PATH.exists():
+        raise HTTPException(
+            status_code=404, detail="Sample profiles dataset not found."
+        )
+    try:
+        data = json.loads(SAMPLES_PATH.read_text(encoding="utf-8"))
+        return [CandidateProfileInput(**item) for item in data]
+    except (json.JSONDecodeError, ValidationError, OSError) as e:
+        logger.error("Failed to read sample profiles: %s", e)
+        raise HTTPException(
+            status_code=500, detail="Failed to load sample profiles."
+        ) from None
+
+
 @app.post("/api/score", response_model=ScoreResult)
 async def create_score(profile: CandidateProfileInput):
     try:
         result = await score_candidate(profile)
     except ScoringError as e:
-        logger.error("Scoring failed for candidate '%s': %s", profile.candidate_label, e)
-        raise HTTPException(status_code=502, detail=str(e))
+        logger.error(
+            "Scoring failed for candidate '%s': %s", profile.candidate_label, e
+        )
+        raise HTTPException(status_code=502, detail=str(e)) from e
 
     score_id = db.save_score(result)
     result.id = score_id
-    logger.info("Saved score run id=%s for candidate '%s'.", score_id, profile.candidate_label)
+    logger.info(
+        "Saved score run id=%s for candidate '%s'.", score_id, profile.candidate_label
+    )
     return result
 
 
@@ -174,13 +223,22 @@ def register_webhook(webhook: WebhookRegisterRequest):
 def get_scores(
     limit: int = Query(default=DEFAULT_SCORES_LIMIT, ge=1, le=MAX_SCORES_LIMIT),
     offset: int = Query(default=0, ge=0),
-    search: Optional[str] = Query(default=None, description="Search term for candidate label, role, or summary"),
-    red_flag_status: Optional[str] = Query(default=None, description="Filter by status: pass, review, fail"),
-    human_review_status: Optional[str] = Query(default=None, description="Filter by human review: pending, approved, rejected, overridden"),
-    min_score: Optional[float] = Query(default=None, ge=0.0, le=100.0),
-    max_score: Optional[float] = Query(default=None, ge=0.0, le=100.0),
-    has_excluded_attributes: Optional[bool] = Query(default=None),
-    sort_by: str = Query(default="id", pattern="^(id|composite_score|created_at|candidate_label)$"),
+    search: str | None = Query(
+        default=None, description="Search term for candidate label, role, or summary"
+    ),
+    red_flag_status: str | None = Query(
+        default=None, description="Filter by status: pass, review, fail"
+    ),
+    human_review_status: str | None = Query(
+        default=None,
+        description="Filter by human review: pending, approved, rejected, overridden",
+    ),
+    min_score: float | None = Query(default=None, ge=0.0, le=100.0),
+    max_score: float | None = Query(default=None, ge=0.0, le=100.0),
+    has_excluded_attributes: bool | None = Query(default=None),
+    sort_by: str = Query(
+        default="id", pattern="^(id|composite_score|created_at|candidate_label)$"
+    ),
     sort_order: str = Query(default="desc", pattern="^(asc|desc)$"),
 ):
     results = db.list_scores(
@@ -230,11 +288,11 @@ def get_analytics():
 @app.get("/api/scores/export")
 def export_scores(
     format: str = Query(default="csv", pattern="^(csv|json)$"),
-    search: Optional[str] = Query(default=None),
-    red_flag_status: Optional[str] = Query(default=None),
-    human_review_status: Optional[str] = Query(default=None),
-    min_score: Optional[float] = Query(default=None),
-    max_score: Optional[float] = Query(default=None),
+    search: str | None = Query(default=None),
+    red_flag_status: str | None = Query(default=None),
+    human_review_status: str | None = Query(default=None),
+    min_score: float | None = Query(default=None),
+    max_score: float | None = Query(default=None),
 ):
     scores = db.list_scores(
         limit=10000,
@@ -253,67 +311,84 @@ def export_scores(
         return Response(
             content=json_data,
             media_type="application/json",
-            headers={"Content-Disposition": 'attachment; filename="candidate_scores_export.json"'},
+            headers={
+                "Content-Disposition": 'attachment; filename="candidate_scores_export.json"'
+            },
         )
 
     # CSV format
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "id",
-        "candidate_label",
-        "job_role",
-        "composite_score",
-        "red_flag_status",
-        "red_flag_rationale",
-        "human_review_status",
-        "human_review_notes",
-        "reviewed_at",
-        "excluded_attributes_detected",
-        "overall_summary",
-        "rubric_version",
-        "model_used",
-        "created_at",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "candidate_label",
+            "job_role",
+            "composite_score",
+            "red_flag_status",
+            "red_flag_rationale",
+            "human_review_status",
+            "human_review_notes",
+            "reviewed_at",
+            "excluded_attributes_detected",
+            "overall_summary",
+            "rubric_version",
+            "model_used",
+            "created_at",
+        ]
+    )
 
     for s in scores:
-        writer.writerow([
-            s.get("id"),
-            s.get("candidate_label"),
-            s.get("job_role", ""),
-            s.get("composite_score"),
-            s.get("red_flag", {}).get("status"),
-            s.get("red_flag", {}).get("rationale"),
-            s.get("human_review", {}).get("status"),
-            s.get("human_review", {}).get("notes"),
-            s.get("human_review", {}).get("reviewed_at") or "",
-            ", ".join(s.get("excluded_attributes_detected", [])),
-            s.get("overall_summary", ""),
-            s.get("rubric_version"),
-            s.get("model_used"),
-            s.get("created_at"),
-        ])
+        writer.writerow(
+            [
+                s.get("id"),
+                s.get("candidate_label"),
+                s.get("job_role", ""),
+                s.get("composite_score"),
+                s.get("red_flag", {}).get("status"),
+                s.get("red_flag", {}).get("rationale"),
+                s.get("human_review", {}).get("status"),
+                s.get("human_review", {}).get("notes"),
+                s.get("human_review", {}).get("reviewed_at") or "",
+                ", ".join(s.get("excluded_attributes_detected", [])),
+                s.get("overall_summary", ""),
+                s.get("rubric_version"),
+                s.get("model_used"),
+                s.get("created_at"),
+            ]
+        )
 
     return Response(
         content=output.getvalue(),
         media_type="text/csv",
-        headers={"Content-Disposition": 'attachment; filename="candidate_scores_export.csv"'},
+        headers={
+            "Content-Disposition": 'attachment; filename="candidate_scores_export.csv"'
+        },
     )
 
 
 @app.get("/api/scores/compare", response_model=CandidateComparisonResponse)
-def compare_candidates(ids: str = Query(..., description="Comma-separated score IDs, e.g. '1,2,5'")):
+def compare_candidates(
+    ids: str = Query(..., description="Comma-separated score IDs, e.g. '1,2,5'"),
+):
     try:
         id_list = [int(i.strip()) for i in ids.split(",") if i.strip()]
     except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid score ID list format. Expected comma-separated integers.")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid score ID list format. Expected comma-separated integers.",
+        ) from None
 
     if not id_list:
-        raise HTTPException(status_code=400, detail="Must provide at least one score ID.")
+        raise HTTPException(
+            status_code=400, detail="Must provide at least one score ID."
+        )
 
     scores = db.get_scores_by_ids(id_list)
     if not scores:
-        raise HTTPException(status_code=404, detail="No score runs found for the provided IDs.")
+        raise HTTPException(
+            status_code=404, detail="No score runs found for the provided IDs."
+        )
 
     # Calculate dimension averages and red flags summary
     dimension_totals: dict[str, float] = {}
@@ -369,7 +444,9 @@ def get_score_detail(score_id: int):
 @app.patch("/api/scores/{score_id}/review")
 def update_human_review(score_id: int, review_update: HumanReviewUpdate):
     """Updates human review status (pending, approved, rejected, overridden) and notes for a score run."""
-    updated = db.update_human_review(score_id, review_update.status, review_update.notes)
+    updated = db.update_human_review(
+        score_id, review_update.status, review_update.notes
+    )
     if updated is None:
         raise HTTPException(status_code=404, detail="Score run not found")
     return updated
@@ -387,22 +464,18 @@ def delete_score_run(score_id: int):
 @app.post("/api/scores/batch", response_model=BatchJobStatusResponse)
 async def create_batch_score(req: BatchScoreRequest, background_tasks: BackgroundTasks):
     batch_id = str(uuid.uuid4())[:8]
-    job_status = {
-        "batch_id": batch_id,
-        "status": "processing",
-        "total_items": len(req.profiles),
-        "completed_items": 0,
-        "failed_items": 0,
-        "results": [],
-    }
-    _batch_store[batch_id] = job_status
+    # Opportunistic cleanup instead of a separate scheduler: each new batch
+    # submission is a natural, low-cost point to sweep out old job rows so
+    # the table doesn't grow unbounded over a long-running server process.
+    db.cleanup_old_batch_jobs()
+    job_status = db.create_batch_job(batch_id, len(req.profiles))
     background_tasks.add_task(_process_batch_job, batch_id, req.profiles)
     return job_status
 
 
 @app.get("/api/scores/batch/{batch_id}", response_model=BatchJobStatusResponse)
 def get_batch_status(batch_id: str):
-    job = _batch_store.get(batch_id)
+    job = db.get_batch_job(batch_id)
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
     return job
@@ -410,4 +483,3 @@ def get_batch_status(batch_id: str):
 
 # Serve the minimal test UI (static/index.html) at the root path.
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
-
