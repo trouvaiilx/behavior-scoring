@@ -3,137 +3,197 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Internal R&D prototype for candidate social-media behavior scoring using local LLM via Ollama." />
+<meta name="description" content="Internal R&D prototype for candidate social-media behavior scoring using a local LLM via Ollama. Advisory signal only — every result requires human review." />
 <title>Behavior Scoring — Prototype</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Header -->
   <header>
     <div class="header-inner">
       <div class="header-left">
         <h1>Behavior Scoring</h1>
         <p class="subtitle">Internal R&amp;D prototype · advisory signal only</p>
       </div>
-      <div id="health-banner" class="health-banner">Checking Ollama…</div>
+      <div id="health-banner" class="health-banner">
+        <span class="health-dot"></span>
+        <span id="health-text">Checking Ollama…</span>
+      </div>
     </div>
   </header>
 
   <!-- Tab Navigation -->
-  <nav class="tab-nav" id="tab-nav">
-    <button class="tab-btn active" data-tab="tab-score" id="tab-btn-score">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      Score
-    </button>
-    <button class="tab-btn" data-tab="tab-history" id="tab-btn-history">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-      History
-    </button>
-    <button class="tab-btn" data-tab="tab-analytics" id="tab-btn-analytics">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-      Analytics
-    </button>
-    <button class="tab-btn" data-tab="tab-compare" id="tab-btn-compare">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      Compare
-    </button>
-    <button class="tab-btn" data-tab="tab-batch" id="tab-btn-batch">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
-      Batch
-    </button>
-  </nav>
+  <div class="tab-nav-wrapper">
+    <nav class="tab-nav" id="tab-nav" role="tablist" aria-label="Main navigation">
+      <button class="tab-btn active" data-tab="tab-score" id="tab-btn-score" role="tab" aria-selected="true" aria-controls="tab-score">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        Analyze
+      </button>
+      <button class="tab-btn" data-tab="tab-history" id="tab-btn-history" role="tab" aria-selected="false" aria-controls="tab-history">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        History
+      </button>
+      <button class="tab-btn" data-tab="tab-analytics" id="tab-btn-analytics" role="tab" aria-selected="false" aria-controls="tab-analytics">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+        Analytics
+      </button>
+      <button class="tab-btn" data-tab="tab-compare" id="tab-btn-compare" role="tab" aria-selected="false" aria-controls="tab-compare">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Compare
+      </button>
+      <button class="tab-btn" data-tab="tab-batch" id="tab-btn-batch" role="tab" aria-selected="false" aria-controls="tab-batch">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        Batch
+      </button>
+    </nav>
+  </div>
 
   <main>
-    <!-- ==================== SCORE TAB ==================== -->
-    <div class="tab-content active" id="tab-score">
+    <!-- ==================== ANALYZE TAB ==================== -->
+    <div class="tab-content active" id="tab-score" role="tabpanel" aria-labelledby="tab-btn-score">
+
+      <!-- Ethical Notice -->
+      <div class="ethical-notice" role="note">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>Research prototype.</strong> Use only sample, synthetic, or explicitly consented data. Every score is an advisory signal — a human reviewer must approve before any decision is made.</span>
+      </div>
+
       <div class="panel glass-panel">
         <div class="panel-header">
-          <h2>Score a Candidate</h2>
-          <span class="panel-badge">Sample / consented / synthetic data only</span>
+          <h2>Analyze a Candidate</h2>
         </div>
-        <form id="score-form">
-          <div class="form-row">
-            <label>
-              <span class="label-text">Candidate Label <span class="required">*</span></span>
-              <input type="text" id="candidate_label" placeholder="e.g. sample_001" required />
+
+        <form id="score-form" novalidate>
+
+          <!-- Section 1: Identity -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Identity
+            </div>
+            <div class="form-row">
+              <label for="candidate_label">
+                <span class="label-text">
+                  Candidate Label
+                  <span class="required" aria-label="required">*</span>
+                </span>
+                <input type="text" id="candidate_label" name="candidate_label"
+                  placeholder="e.g. sample_001"
+                  autocomplete="off" required aria-required="true" />
+              </label>
+              <label for="job_role">
+                <span class="label-text">Target Job Role <span class="label-hint">(optional)</span></span>
+                <input type="text" id="job_role" name="job_role"
+                  placeholder="e.g. Senior Software Engineer"
+                  autocomplete="off" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 2: Profile Content -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Profile Content
+            </div>
+
+            <label for="cv_claims">
+              <span class="label-text">CV / Resume Claims</span>
+              <textarea id="cv_claims" name="cv_claims" rows="3"
+                placeholder="e.g. Software Engineer at Company X (2022–2024), skills: Python, SQL, team lead"></textarea>
             </label>
-            <label>
-              <span class="label-text">Target Job Role</span>
-              <input type="text" id="job_role" placeholder="e.g. Senior Software Engineer" />
+
+            <label for="profile_about">
+              <span class="label-text">Public "About" / Bio Text</span>
+              <textarea id="profile_about" name="profile_about" rows="3"
+                placeholder="e.g. Paste the candidate's LinkedIn summary or Twitter bio here"></textarea>
+            </label>
+
+            <label for="posts_sample">
+              <span class="label-text">Sample Public Posts / Articles</span>
+              <textarea id="posts_sample" name="posts_sample" rows="4"
+                placeholder="e.g. Paste 3–5 representative public posts or articles"></textarea>
             </label>
           </div>
 
-          <label>
-            <span class="label-text">CV / Resume Claims</span>
-            <textarea id="cv_claims" rows="3" placeholder="e.g. Software Engineer at X (2022-2024), skills: Python, SQL"></textarea>
-          </label>
+          <!-- Section 3: Context -->
+          <div class="form-section">
+            <div class="form-section-title">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Context
+            </div>
 
-          <label>
-            <span class="label-text">Public "About" / Bio Text</span>
-            <textarea id="profile_about" rows="3"></textarea>
-          </label>
+            <label for="comments_sample">
+              <span class="label-text">Sample Public Comments / Interactions</span>
+              <textarea id="comments_sample" name="comments_sample" rows="3"
+                placeholder="e.g. Replies, comment threads, or engagement patterns from public posts"></textarea>
+            </label>
 
-          <label>
-            <span class="label-text">Sample Public Posts / Articles</span>
-            <textarea id="posts_sample" rows="4"></textarea>
-          </label>
+            <label for="network_notes">
+              <span class="label-text">Network / Endorsement Notes</span>
+              <textarea id="network_notes" name="network_notes" rows="2"
+                placeholder="e.g. Endorsed by 12 connections for Python; 3 mutual contacts with senior engineers"></textarea>
+            </label>
+          </div>
 
-          <label>
-            <span class="label-text">Sample Public Comments / Interactions</span>
-            <textarea id="comments_sample" rows="3"></textarea>
-          </label>
-
-          <label>
-            <span class="label-text">Network / Endorsement Notes</span>
-            <textarea id="network_notes" rows="2"></textarea>
-          </label>
-
-          <button type="submit" id="submit-btn" class="btn btn-primary btn-glow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Run Scoring
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-glow" style="margin-top: 8px; align-self: flex-start;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Analyze Candidate
           </button>
         </form>
-        <div id="error-box" class="error-box" hidden></div>
+
+        <div id="error-box" class="error-box" hidden role="alert">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="error-text"></span>
+        </div>
       </div>
 
-      <div class="panel glass-panel" id="result-panel" hidden>
+      <!-- Result Panel -->
+      <div class="panel glass-panel" id="result-panel" hidden aria-live="polite">
         <div class="panel-header">
-          <h2>Result</h2>
+          <h2>Analysis Result</h2>
         </div>
         <div id="result-content"></div>
       </div>
     </div>
 
     <!-- ==================== HISTORY TAB ==================== -->
-    <div class="tab-content" id="tab-history">
+    <div class="tab-content" id="tab-history" role="tabpanel" aria-labelledby="tab-btn-history">
       <div class="panel glass-panel">
         <div class="panel-header">
           <h2>Scoring History</h2>
           <div class="header-actions">
-            <button class="btn btn-outline btn-sm" id="export-csv-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export CSV
+            <button class="btn btn-outline btn-sm" id="export-csv-btn" title="Export current filter results as CSV">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
             </button>
-            <button class="btn btn-outline btn-sm" id="export-json-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export JSON
+            <button class="btn btn-outline btn-sm" id="export-json-btn" title="Export current filter results as JSON">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              JSON
             </button>
-            <button class="btn btn-accent btn-sm" id="refresh-history">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <button class="btn btn-accent btn-sm" id="refresh-history" title="Refresh results">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
               Refresh
             </button>
           </div>
         </div>
 
-        <!-- Filters Toolbar -->
-        <div class="filters-bar" id="filters-bar">
+        <!-- Filters -->
+        <div class="filters-bar" id="filters-bar" role="search">
           <div class="filter-group">
-            <input type="text" id="filter-search" class="filter-input" placeholder="Search label, role, summary…" />
+            <label for="filter-search" class="sr-only">Search</label>
+            <input type="text" id="filter-search" class="filter-input" placeholder="Search label, role, summary…" aria-label="Search by label, role, or summary" />
           </div>
           <div class="filter-group">
-            <select id="filter-red-flag" class="filter-select">
+            <label for="filter-red-flag" class="sr-only">Red flag status</label>
+            <select id="filter-red-flag" class="filter-select" aria-label="Filter by red flag status">
               <option value="">All Red Flags</option>
               <option value="pass">Pass</option>
               <option value="review">Review</option>
@@ -141,7 +201,8 @@
             </select>
           </div>
           <div class="filter-group">
-            <select id="filter-human-review" class="filter-select">
+            <label for="filter-human-review" class="sr-only">Human review status</label>
+            <select id="filter-human-review" class="filter-select" aria-label="Filter by human review status">
               <option value="">All Reviews</option>
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
@@ -149,13 +210,10 @@
               <option value="overridden">Overridden</option>
             </select>
           </div>
-          <div class="filter-group filter-range">
-            <input type="number" id="filter-min-score" class="filter-input filter-input-sm" placeholder="Min" min="0" max="100" step="1" />
-            <span class="filter-dash">–</span>
-            <input type="number" id="filter-max-score" class="filter-input filter-input-sm" placeholder="Max" min="0" max="100" step="1" />
-          </div>
+          <!-- Min/Max score filters removed -->
           <div class="filter-group">
-            <select id="filter-sort-by" class="filter-select">
+            <label for="filter-sort-by" class="sr-only">Sort by</label>
+            <select id="filter-sort-by" class="filter-select" aria-label="Sort by">
               <option value="id">Sort: Latest</option>
               <option value="composite_score">Sort: Score</option>
               <option value="created_at">Sort: Date</option>
@@ -163,19 +221,20 @@
             </select>
           </div>
           <div class="filter-group">
-            <select id="filter-sort-order" class="filter-select filter-select-sm">
+            <label for="filter-sort-order" class="sr-only">Sort direction</label>
+            <select id="filter-sort-order" class="filter-select filter-select-sm" aria-label="Sort direction">
               <option value="desc">↓ Desc</option>
               <option value="asc">↑ Asc</option>
             </select>
           </div>
-          <button class="btn btn-ghost btn-sm" id="apply-filters-btn">Apply</button>
+          <button class="btn btn-accent btn-sm" id="apply-filters-btn">Apply</button>
           <button class="btn btn-ghost btn-sm" id="clear-filters-btn">Clear</button>
         </div>
 
-        <div class="history-stats" id="history-stats"></div>
+        <div class="history-stats" id="history-stats" aria-live="polite"></div>
 
         <div class="table-responsive">
-          <table id="history-table">
+          <table id="history-table" aria-label="Scoring history">
             <thead>
               <tr>
                 <th style="width:36px">ID</th>
@@ -183,25 +242,25 @@
                 <th style="width:100px">Job Role</th>
                 <th>Summary</th>
                 <th style="width:70px">Score</th>
-                <th style="width:68px">Red Flag</th>
+                <th style="width:72px">Red Flag</th>
                 <th style="width:78px">Review</th>
-                <th style="width:115px">Time</th>
-                <th style="width:90px">Actions</th>
+                <th style="width:120px">Time</th>
+                <th style="width:96px">Actions</th>
               </tr>
             </thead>
-            <tbody></tbody>
+            <tbody id="history-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <!-- ==================== ANALYTICS TAB ==================== -->
-    <div class="tab-content" id="tab-analytics">
+    <div class="tab-content" id="tab-analytics" role="tabpanel" aria-labelledby="tab-btn-analytics">
       <div class="panel glass-panel">
         <div class="panel-header">
           <h2>Analytics Dashboard</h2>
-          <button class="btn btn-accent btn-sm" id="refresh-analytics-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <button class="btn btn-accent btn-sm" id="refresh-analytics-btn" title="Refresh analytics">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Refresh
           </button>
         </div>
@@ -212,31 +271,31 @@
     </div>
 
     <!-- ==================== COMPARE TAB ==================== -->
-    <div class="tab-content" id="tab-compare">
+    <div class="tab-content" id="tab-compare" role="tabpanel" aria-labelledby="tab-btn-compare">
       <div class="panel glass-panel">
         <div class="panel-header">
           <h2>Side-by-Side Comparison</h2>
         </div>
         <div class="compare-input-row">
-          <label>
-            <span class="label-text">Score IDs (comma-separated)</span>
+          <label for="compare-ids">
+            <span class="label-text">Score IDs to compare</span>
             <input type="text" id="compare-ids" placeholder="e.g. 1, 2, 5" />
           </label>
-          <button class="btn btn-primary btn-sm" id="compare-btn">Compare</button>
+          <button class="btn btn-primary" id="compare-btn">Compare</button>
         </div>
         <div id="compare-content"></div>
       </div>
     </div>
 
     <!-- ==================== BATCH TAB ==================== -->
-    <div class="tab-content" id="tab-batch">
+    <div class="tab-content" id="tab-batch" role="tabpanel" aria-labelledby="tab-btn-batch">
       <div class="panel glass-panel">
         <div class="panel-header">
-          <h2>Batch Scoring</h2>
-          <span class="panel-badge">Submit multiple profiles at once (max 20)</span>
+          <h2>Batch Analysis</h2>
+          <span class="panel-badge">Submit up to 20 profiles at once</span>
         </div>
         <div class="batch-input-area">
-          <label>
+          <label for="batch-json">
             <span class="label-text">Batch JSON Payload</span>
             <textarea id="batch-json" rows="14" placeholder='[
   {
@@ -250,37 +309,37 @@
   }
 ]'></textarea>
           </label>
-          <button class="btn btn-primary" id="batch-submit-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Submit Batch
+          <button class="btn btn-primary" id="batch-submit-btn" style="align-self: flex-start;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Start Batch Analysis
           </button>
         </div>
-        <div id="batch-status" class="batch-status-area"></div>
+        <div id="batch-status" class="batch-status-area" aria-live="polite"></div>
       </div>
     </div>
   </main>
 
-  <!-- Human Review Modal -->
-  <div class="modal-overlay" id="review-modal" hidden>
+  <!-- ==================== HUMAN REVIEW MODAL ==================== -->
+  <div class="modal-overlay" id="review-modal" hidden role="dialog" aria-modal="true" aria-labelledby="review-modal-heading">
     <div class="modal glass-panel">
       <div class="modal-header">
-        <h3>Human Review</h3>
-        <button class="modal-close" id="review-modal-close">&times;</button>
+        <h3 id="review-modal-heading">Human Review</h3>
+        <button class="modal-close" id="review-modal-close" aria-label="Close review modal">×</button>
       </div>
       <div class="modal-body">
         <p id="review-modal-label" class="muted-text"></p>
-        <label>
-          <span class="label-text">Review Status</span>
-          <select id="review-status" class="filter-select">
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="overridden">Overridden</option>
+        <label for="review-status">
+          <span class="label-text">Review Decision</span>
+          <select id="review-status">
+            <option value="pending">Pending — awaiting review</option>
+            <option value="approved">Approved — score confirmed</option>
+            <option value="rejected">Rejected — score dismissed</option>
+            <option value="overridden">Overridden — score adjusted by reviewer</option>
           </select>
         </label>
-        <label>
-          <span class="label-text">Review Notes</span>
-          <textarea id="review-notes" rows="3" placeholder="e.g. Reviewed and cleared by HR manager"></textarea>
+        <label for="review-notes">
+          <span class="label-text">Reviewer Notes</span>
+          <textarea id="review-notes" rows="3" placeholder="e.g. Reviewed and cleared by HR manager on 2026-07-25"></textarea>
         </label>
       </div>
       <div class="modal-footer">
@@ -290,14 +349,31 @@
     </div>
   </div>
 
-  <!-- Score Detail Modal -->
-  <div class="modal-overlay" id="detail-modal" hidden>
+  <!-- ==================== SCORE DETAIL MODAL ==================== -->
+  <div class="modal-overlay" id="detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
     <div class="modal modal-lg glass-panel">
       <div class="modal-header">
         <h3 id="detail-modal-title">Score Detail</h3>
-        <button class="modal-close" id="detail-modal-close">&times;</button>
+        <button class="modal-close" id="detail-modal-close" aria-label="Close detail modal">×</button>
       </div>
       <div class="modal-body" id="detail-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+  <div class="modal-overlay" id="confirm-modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-desc">
+    <div class="modal glass-panel" style="max-width: 400px;">
+      <div class="modal-body" style="gap: 0;">
+        <div class="confirm-modal-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </div>
+        <p class="confirm-modal-title" id="confirm-modal-title">Delete this score run?</p>
+        <p class="confirm-modal-body" id="confirm-modal-desc">This will permanently delete the score run and all its data. This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; gap: 12px;">
+        <button class="btn btn-ghost" id="confirm-cancel-btn">Keep it</button>
+        <button class="btn btn-danger" id="confirm-delete-btn">Delete run</button>
+      </div>
     </div>
   </div>
 

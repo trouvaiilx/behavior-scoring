@@ -1,0 +1,13 @@
+version: 2
+updates:
+  # Check for pip dependency updates in requirements.txt
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      
+  # Keep GitHub Actions in workflows up-to-date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
