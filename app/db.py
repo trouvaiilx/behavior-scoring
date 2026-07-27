@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 """
 
+WEBHOOKS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS webhooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT NOT NULL,
+    events_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+"""
+
 
 def _connect() -> sqlite3.Connection:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
@@ -46,6 +55,7 @@ def _connect() -> sqlite3.Connection:
 def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
+        conn.execute(WEBHOOKS_SCHEMA)
         # Migrations for DBs created before these columns existed.
         existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(scores)")}
         if "overall_summary" not in existing_cols:
@@ -60,6 +70,35 @@ def init_db() -> None:
             conn.execute("ALTER TABLE scores ADD COLUMN human_review_notes TEXT NOT NULL DEFAULT ''")
         if "reviewed_at" not in existing_cols:
             conn.execute("ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''")
+
+
+def insert_webhook(url: str, events: list[str]) -> dict:
+    created_at = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO webhooks (url, events_json, created_at) VALUES (?, ?, ?)",
+            (url, json.dumps(events), created_at),
+        )
+        return {
+            "id": cur.lastrowid,
+            "url": url,
+            "events": events,
+            "created_at": created_at,
+        }
+
+
+def list_webhooks() -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute("SELECT * FROM webhooks ORDER BY id DESC").fetchall()
+        return [
+            {
+                "id": row["id"],
+                "url": row["url"],
+                "events": json.loads(row["events_json"]),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
 
 
 def save_score(result: ScoreResult) -> int:

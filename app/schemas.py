@@ -1,4 +1,5 @@
 from typing import Literal, Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -92,6 +93,35 @@ class HumanReviewInfo(BaseModel):
 class HumanReviewUpdate(BaseModel):
     status: HumanReviewStatus
     notes: str = Field(default="", max_length=1000)
+
+
+class WebhookRegisterRequest(BaseModel):
+    url: str = Field(..., min_length=1, max_length=2048)
+    events: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("url")
+    @classmethod
+    def _valid_webhook_url(cls, value: str) -> str:
+        value = value.strip()
+        parsed = urlparse(value)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise ValueError("url must be a valid HTTP(S) URL")
+        return value
+
+    @field_validator("events")
+    @classmethod
+    def _valid_events(cls, values: list[str]) -> list[str]:
+        cleaned = [value.strip() for value in values]
+        if any(not value for value in cleaned):
+            raise ValueError("events cannot contain blank values")
+        return cleaned
+
+
+class WebhookResponse(BaseModel):
+    id: int
+    url: str
+    events: list[str]
+    created_at: str
 
 
 class ScoreResult(BaseModel):
