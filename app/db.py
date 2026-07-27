@@ -8,7 +8,7 @@ back any score to exactly what produced it.
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from app.config import DATABASE_PATH
@@ -36,17 +36,42 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 """
 
+# Batch jobs used to live only in an in-memory dict in app/main.py, which
+# meant a server restart silently lost all in-flight/completed batch
+# history, and the dict grew unbounded for the life of the process.
+# Persisting them here fixes both: state survives restarts, and
+# cleanup_old_batch_jobs() below gives callers a way to bound growth.
+BATCH_SCHEMA = """
+CREATE TABLE IF NOT EXISTS batch_jobs (
+    batch_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'processing',
+    total_items INTEGER NOT NULL,
+    completed_items INTEGER NOT NULL DEFAULT 0,
+    failed_items INTEGER NOT NULL DEFAULT 0,
+    results_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+"""
+
 
 def _connect() -> sqlite3.Connection:
     Path(DATABASE_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DATABASE_PATH)
     conn.row_factory = sqlite3.Row
+    # WAL mode lets readers (e.g. someone browsing history) proceed without
+    # blocking on a concurrent writer (e.g. a batch job saving results),
+    # and busy_timeout makes a writer retry for a bit instead of
+    # immediately raising "database is locked" under contention.
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
     return conn
 
 
 def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
+        conn.execute(BATCH_SCHEMA)
         # Migrations for DBs created before these columns existed.
         existing_cols = {
             row["name"] for row in conn.execute("PRAGMA table_info(scores)")
@@ -366,6 +391,100 @@ def get_analytics_summary() -> dict:
         "excluded_attributes_counts": excluded_counts,
         "score_buckets": buckets,
     }
+
+
+def create_batch_job(batch_id: str, total_items: int) -> dict:
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO batch_jobs (
+                batch_id, status, total_items, completed_items, failed_items,
+                results_json, created_at, updated_at
+            ) VALUES (?, 'processing', ?, 0, 0, '[]', ?, ?)
+            """,
+            (batch_id, total_items, now, now),
+        )
+    return get_batch_job(batch_id)
+
+
+def get_batch_job(batch_id: str) -> dict | None:
+    with _connect() as conn:
+        row = conn.execute(
+            "SELECT * FROM batch_jobs WHERE batch_id = ?", (batch_id,)
+        ).fetchone()
+        return _batch_row_to_dict(row) if row else None
+
+
+def append_batch_result(batch_id: str, item_result: dict, succeeded: bool) -> None:
+    """Appends one item's result to a batch job's results list and bumps
+    its completed/failed counters.
+
+    This is a read-modify-write under a single connection, which would be
+    unsafe against concurrent writers to the *same* row -- but each batch
+    job is only ever advanced by its own single background task (see
+    app/main.py::_process_batch_job), one item at a time, so there is
+    never more than one writer per batch_id at once. Different batch jobs
+    write to different rows and don't interact.
+    """
+    with _connect() as conn:
+        row = conn.execute(
+            """
+            SELECT results_json, completed_items, failed_items
+            FROM batch_jobs WHERE batch_id = ?
+            """,
+            (batch_id,),
+        ).fetchone()
+        if row is None:
+            return
+
+        results = json.loads(row["results_json"])
+        results.append(item_result)
+        completed = row["completed_items"] + (1 if succeeded else 0)
+        failed = row["failed_items"] + (0 if succeeded else 1)
+
+        conn.execute(
+            """
+            UPDATE batch_jobs
+            SET results_json = ?, completed_items = ?, failed_items = ?, updated_at = ?
+            WHERE batch_id = ?
+            """,
+            (
+                json.dumps(results),
+                completed,
+                failed,
+                datetime.now(timezone.utc).isoformat(),
+                batch_id,
+            ),
+        )
+
+
+def finalize_batch_job(batch_id: str, status: str) -> None:
+    with _connect() as conn:
+        conn.execute(
+            "UPDATE batch_jobs SET status = ?, updated_at = ? WHERE batch_id = ?",
+            (status, datetime.now(timezone.utc).isoformat(), batch_id),
+        )
+
+
+def cleanup_old_batch_jobs(max_age_hours: int = 24) -> int:
+    """Deletes batch job rows whose created_at is older than max_age_hours.
+
+    Called opportunistically (e.g. each time a new batch is submitted)
+    rather than via a separate scheduler, so the table can't grow
+    unbounded over the life of a long-running server without adding any
+    new infrastructure. Returns the number of rows deleted.
+    """
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=max_age_hours)).isoformat()
+    with _connect() as conn:
+        cur = conn.execute("DELETE FROM batch_jobs WHERE created_at < ?", (cutoff,))
+        return cur.rowcount
+
+
+def _batch_row_to_dict(row: sqlite3.Row) -> dict:
+    d = dict(row)
+    d["results"] = json.loads(d.pop("results_json"))
+    return d
 
 
 def _row_to_dict(row: sqlite3.Row) -> dict:
