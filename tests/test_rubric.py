@@ -1,6 +1,12 @@
 import pytest
 
-from app.rubric import DIMENSIONS, IncompleteScoreError, rubric_hash, total_weight, weighted_composite
+from app.rubric import (
+    DIMENSIONS,
+    IncompleteScoreError,
+    rubric_hash,
+    total_weight,
+    weighted_composite,
+)
 
 
 def test_total_weight_sums_to_one():

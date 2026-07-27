@@ -1,0 +1,51 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+# Directories/files ruff should never touch
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".pytest_cache",
+    "venv",
+    "__pycache__",
+    "data",
+]
+
+[tool.ruff.lint]
+# Rule sets enabled:
+#   E/W  — pycodestyle errors & warnings
+#   F    — Pyflakes (unused imports, undefined names, etc.)
+#   I    — isort (import ordering)
+#   B    — flake8-bugbear (likely bugs / design issues)
+#   UP   — pyupgrade (modernise Python syntax)
+#   C4   — flake8-comprehensions (simplify comprehensions)
+#   SIM  — flake8-simplify
+#   BLE  — flake8-blind-except (catch-all exceptions)
+#   RUF  — Ruff-native rules
+select = ["E", "W", "F", "I", "B", "UP", "C4", "SIM", "BLE", "RUF"]
+
+# Specific rules to ignore:
+#   BLE001 — blind Exception catch already handled with noqa in main.py
+#   B008   — function calls in default arguments (FastAPI Query() pattern)
+#   E501   — line too long (formatter handles this)
+ignore = ["BLE001", "B008", "E501"]
+
+# Allow bare noqa comments (without a specific code) on intentional suppressions
+unfixable = []
+
+[tool.ruff.lint.per-file-ignores]
+# Test files: allow assert statements and broad imports
+"tests/**/*.py" = ["S101"]
+# Sample-data scripts: less strict
+"sample_data/**/*.py" = ["T201"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+force-sort-within-sections = true
+
+[tool.ruff.format]
+# Black-compatible formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

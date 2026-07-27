@@ -66,8 +66,16 @@
       </div>
 
       <div class="panel glass-panel">
-        <div class="panel-header">
+        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <h2>Analyze a Candidate</h2>
+          <div class="sample-preset-container" style="display: flex; align-items: center; gap: 8px;">
+            <label for="sample-preset-select" style="margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; color: var(--text-muted);">
+              Load Sample Profile:
+            </label>
+            <select id="sample-preset-select" class="form-control" style="padding: 6px 12px; font-size: 0.85rem; max-width: 260px;">
+              <option value="">-- Select Sample Preset --</option>
+            </select>
+          </div>
         </div>
 
         <form id="score-form" novalidate>
@@ -309,10 +317,16 @@
   }
 ]'></textarea>
           </label>
-          <button class="btn btn-primary" id="batch-submit-btn" style="align-self: flex-start;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            Start Batch Analysis
-          </button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button class="btn btn-primary" id="batch-submit-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Start Batch Analysis
+            </button>
+            <button type="button" class="btn btn-secondary" id="load-sample-batch-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Pre-fill with Sample Profiles
+            </button>
+          </div>
         </div>
         <div id="batch-status" class="batch-status-area" aria-live="polite"></div>
       </div>

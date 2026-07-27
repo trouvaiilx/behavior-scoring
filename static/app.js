@@ -1001,7 +1001,59 @@ async function pollBatch(batchId, totalItems) {
 }
 
 // ================================================================
+// SAMPLE PRESET PRE-FILLING
+// ================================================================
+let loadedSampleProfiles = [];
+
+async function loadSamplePresets() {
+  const select = document.getElementById("sample-preset-select");
+  if (!select) return;
+
+  try {
+    const res = await fetch("/api/samples");
+    if (!res.ok) return;
+    loadedSampleProfiles = await res.json();
+
+    select.innerHTML = `<option value="">-- Select Sample Preset --</option>` +
+      loadedSampleProfiles.map((p, idx) =>
+        `<option value="${idx}">${escapeHtml(p.candidate_label)} (${escapeHtml(p.job_role || 'No Role')})</option>`
+      ).join("");
+  } catch (err) {
+    console.warn("Could not load sample presets:", err);
+  }
+}
+
+document.getElementById("sample-preset-select")?.addEventListener("change", (e) => {
+  const idx = e.target.value;
+  if (idx === "" || !loadedSampleProfiles[idx]) return;
+
+  const p = loadedSampleProfiles[idx];
+  document.getElementById("candidate_label").value = p.candidate_label || "";
+  document.getElementById("job_role").value = p.job_role || "";
+  document.getElementById("cv_claims").value = p.cv_claims || "";
+  document.getElementById("profile_about").value = p.profile_about || "";
+  document.getElementById("posts_sample").value = p.posts_sample || "";
+  document.getElementById("comments_sample").value = p.comments_sample || "";
+  document.getElementById("network_notes").value = p.network_notes || "";
+
+  showToast(`Loaded sample profile '${p.candidate_label}'.`, "info", 3000);
+});
+
+document.getElementById("load-sample-batch-btn")?.addEventListener("click", () => {
+  const batchTextarea = document.getElementById("batch-json");
+  if (!batchTextarea) return;
+
+  if (loadedSampleProfiles.length > 0) {
+    batchTextarea.value = JSON.stringify(loadedSampleProfiles, null, 2);
+    showToast(`Pre-filled batch form with ${loadedSampleProfiles.length} sample profiles!`, "success", 3000);
+  } else {
+    showToast("Sample profiles not available yet.", "error", 3000);
+  }
+});
+
+// ================================================================
 // INIT
 // ================================================================
 checkHealth();
 loadHistory();
+loadSamplePresets();
