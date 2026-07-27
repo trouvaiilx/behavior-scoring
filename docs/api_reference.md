@@ -9,9 +9,10 @@ production hiring-decision API.
 
 Default base URL: `http://127.0.0.1:8000`
 
-The application has no authentication or authorization layer. Requests and
-JSON responses use `application/json` unless an endpoint explicitly returns a
-download.
+The currently mounted routes do not enforce authentication or authorization.
+`POST /api/auth/token` issues a development bearer token, but no route yet
+validates that token. Requests and JSON responses use `application/json` unless
+an endpoint explicitly returns a download.
 
 ## Endpoint Index
 
@@ -20,6 +21,9 @@ download.
 | GET | `/api/health` | Check backend and local Ollama availability. |
 | GET | `/api/rubric` | Return the active scoring rubric and exclusions. |
 | POST | `/api/score` | Score and persist one candidate profile. |
+| POST | `/api/webhooks` | Register an event webhook. |
+| POST | `/api/auth/token` | Exchange client credentials for a development bearer token. |
+| POST | `/api/candidates/import` | Persist up to 100 imported candidate profiles. |
 | GET | `/api/scores` | List persisted score runs with filters and pagination. |
 | GET | `/api/scores/analytics` | Return aggregate score and review metrics. |
 | GET | `/api/scores/export` | Download filtered score runs as CSV or JSON. |
@@ -47,12 +51,15 @@ documentation at `/docs`, `/redoc`, and `/openapi.json`.
   screening gate and is not included in the composite-score calculation.
 - Human-review statuses are `pending`, `approved`, `rejected`, and
   `overridden`.
+- Candidate imports are stored in the separate `candidates` table. Importing a
+  profile does not create a score run or queue scoring.
 
 ## Shared Schemas
 
 ### CandidateProfileInput
 
-Used by `POST /api/score` and for each item in `POST /api/scores/batch`.
+Used by `POST /api/score`, `POST /api/scores/batch`, and each `profiles` item
+in `POST /api/candidates/import`.
 
 | Field | Type | Required | Constraints and meaning |
 | --- | --- | --- | --- |
@@ -80,6 +87,47 @@ Example:
   "network_notes": "Several relevant endorsements."
 }
 ```
+
+### WebhookRegisterRequest and WebhookResponse
+
+Used by `POST /api/webhooks`.
+
+| Request field | Type | Required | Constraints and meaning |
+| --- | --- | --- | --- |
+| `url` | string | Yes | Trimmed HTTP or HTTPS URL with a host; 1-2,048 characters. |
+| `events` | string array | No | Defaults to `[]`; maximum 20 items. Values are trimmed and cannot be blank. |
+
+`WebhookResponse` returns the persisted `id` (integer), `url` (string),
+`events` (string array), and `created_at` (ISO 8601 UTC string).
+
+### TokenRequest and TokenResponse
+
+Used by `POST /api/auth/token`.
+
+| Request field | Type | Required | Constraints and behavior |
+| --- | --- | --- | --- |
+| `client_id` | string | Yes | Required identifier; 1-200 characters. The current prototype validates its presence and length but does not look it up. |
+| `client_secret` | string | Yes | Required shared secret; 1-512 characters. It must match the configured `API_SECRET_KEY`. |
+
+`TokenResponse` contains `access_token` (string) and `token_type` (always
+`"bearer"`). The current prototype returns the configured shared secret itself
+as `access_token`; it does not issue unique tokens, expiry times, or refresh
+tokens. Treat this endpoint as local development-only functionality and do not
+log either credential or token.
+
+### CandidateImportRequest and CandidateImportResponse
+
+Used by `POST /api/candidates/import`. The bridge posts its normalized scraper
+output in the `profiles` field.
+
+| Request field | Type | Required | Constraints and behavior |
+| --- | --- | --- | --- |
+| `profiles` | array of `CandidateProfileInput` or null | Operationally yes | Maximum 100 profiles. Each supplied item follows `CandidateProfileInput` validation. The handler requires a list in practice; an empty list is accepted as a zero-record import. |
+| `json_file` | string or null | No | Maximum 500,000 characters. It is declared in the schema but the current handler does not parse it into profiles, so it is not a usable import mechanism. |
+
+`CandidateImportResponse` contains `imported_count` (integer), `candidate_ids`
+(integer array), and `status` (always `"success"`). IDs identify records in the
+local `candidates` table, not score-run IDs.
 
 ### ScoreResult
 
@@ -195,6 +243,132 @@ Error responses:
 | --- | --- |
 | `422` | The input body does not satisfy `CandidateProfileInput`. |
 | `502` | The scoring pipeline cannot call or parse the configured Ollama model. The response `detail` contains the scoring error. |
+
+### `POST /api/webhooks`
+
+Registers a webhook destination and the event names it is interested in. The
+route persists the registration locally; event delivery is not implemented by
+the current prototype.
+
+Request body: a
+[`WebhookRegisterRequest`](#webhookregisterrequest-and-webhookresponse)
+object.
+
+Example:
+
+```json
+{
+  "url": "https://example.test/hooks/behavior-score",
+  "events": ["score.completed", "score.review_required"]
+}
+```
+
+Success response (`201 Created`):
+
+```json
+{
+  "id": 7,
+  "url": "https://example.test/hooks/behavior-score",
+  "events": ["score.completed", "score.review_required"],
+  "created_at": "2026-07-27T12:34:56.789012+00:00"
+}
+```
+
+Error response: `422 Unprocessable Entity` when `url` is blank, is not an
+HTTP(S) URL with a host, `events` has more than 20 values, or an event value is
+blank.
+
+### `POST /api/auth/token`
+
+Exchanges client credentials for a development bearer token. The server
+compares `client_secret` with `API_SECRET_KEY` using a constant-time comparison.
+The required `client_id` is currently not used for identity lookup.
+
+Request body: an
+[`TokenRequest`](#tokenrequest-and-tokenresponse) object.
+
+Example:
+
+```json
+{
+  "client_id": "local-scraper-bridge",
+  "client_secret": "configured-api-secret"
+}
+```
+
+Success response (`200 OK`): an
+[`TokenResponse`](#tokenrequest-and-tokenresponse) object.
+
+Error responses:
+
+| Status | When returned |
+| --- | --- |
+| `401` | `client_secret` does not match the configured shared secret. The response includes `WWW-Authenticate: Bearer`. |
+| `422` | The body is malformed, a credential is missing, or `client_id`/`client_secret` violates its length constraint. |
+
+The returned token is not currently required by any route, has no expiry, and
+is not an authentication boundary. Do not expose this prototype endpoint
+beyond a trusted local development environment.
+
+### `POST /api/candidates/import`
+
+Persists normalized profiles from an approved scraper bridge into the local
+`candidates` table. It does not score the profiles or create a batch job.
+Submit only sample, synthetic, or explicitly consented data with a valid legal
+basis; this route must not be used to ingest scraped candidate data
+indiscriminately.
+
+Request body: a [`CandidateImportRequest`](#candidateimportrequest) object.
+
+Example:
+
+```json
+{
+  "profiles": [
+    {
+      "candidate_label": "consented_sample_001",
+      "job_role": "Backend Engineer",
+      "cv_claims": "Software Engineer, 2022-2024. Python and SQL.",
+      "profile_about": "Backend engineer interested in distributed systems.",
+      "posts_sample": "Wrote about database indexing strategies.",
+      "comments_sample": "Helpful technical comments on engineering posts.",
+      "network_notes": "Several relevant endorsements."
+    }
+  ]
+}
+```
+
+Success response (`200 OK`):
+
+```json
+{
+  "imported_count": 1,
+  "candidate_ids": [17],
+  "status": "success"
+}
+```
+
+`candidate_ids` contains the newly persisted local candidate-record IDs. They
+cannot be passed to score-detail or batch-status routes, and no scoring is
+started by this endpoint.
+
+Error responses:
+
+| Status | When returned |
+| --- | --- |
+| `422` | `profiles` has more than 100 entries, an individual profile fails `CandidateProfileInput` validation, or `json_file` exceeds 500,000 characters. |
+
+The schema accepts `profiles: null` and `json_file`, but the current handler
+passes `profiles` directly to persistence and does not parse `json_file`.
+Consequently, callers must provide a `profiles` list. An empty list succeeds as
+a zero-record import. Supplying only `json_file` or omitting `profiles`
+currently produces a server error rather than a validation response; this is a
+known prototype limitation.
+
+`scripts/scraper_bridge.py` accepts a JSON array, a single candidate object,
+or an envelope using `candidates` or `profiles`. It normalizes common scraper
+field names into the `profiles` request contract and submits no more than 100
+profiles per import request.
 
 ### `GET /api/scores`
 
