@@ -21,6 +21,8 @@ from app.schemas import (
     CandidateProfileInput,
     HumanReviewUpdate,
     ScoreResult,
+    WebhookRegisterRequest,
+    WebhookResponse,
 )
 from app.scoring import ScoringError, score_candidate
 
@@ -119,6 +121,11 @@ async def create_score(profile: CandidateProfileInput):
     result.id = score_id
     logger.info("Saved score run id=%s for candidate '%s'.", score_id, profile.candidate_label)
     return result
+
+
+@app.post("/api/webhooks", response_model=WebhookResponse, status_code=201)
+def register_webhook(webhook: WebhookRegisterRequest):
+    return db.insert_webhook(webhook.url, webhook.events)
 
 
 @app.get("/api/scores")
