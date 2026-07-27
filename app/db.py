@@ -413,3 +413,29 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     d["job_role"] = d.get("job_role", "") or ""
     return d
 
+
+def insert_candidates(profiles: list[CandidateProfileInput]) -> list[int]:
+    created_at = datetime.now(timezone.utc).isoformat()
+    inserted_ids = []
+    with _connect() as conn:
+        for p in profiles:
+            cur = conn.execute(
+                """
+                INSERT INTO candidates (
+                    candidate_label, job_role, cv_claims, profile_about,
+                    posts_sample, comments_sample, network_notes, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    p.candidate_label,
+                    p.job_role,
+                    p.cv_claims,
+                    p.profile_about,
+                    p.posts_sample,
+                    p.comments_sample,
+                    p.network_notes,
+                    created_at,
+                ),
+            )
+            inserted_ids.append(cur.lastrowid)
+    return inserted_ids
