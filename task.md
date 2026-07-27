@@ -11,14 +11,14 @@
 - [ ] Create `requirements-dev.txt` with Playwright + test deps (TUI 1)
 - [ ] Create `docs/` directory and initial `api_reference.md` (TUI 4)
 
-## Phase 2: Core New APIs (Week 3-4)
+## Phase 2: Core New APIs (Week 3-4) — ✅ COMPLETED
 
 - [x] Implement Webhook API — `POST /api/webhooks` (TUI 1: T1.1)
-- [ ] Implement Auth/API Key — `POST /api/auth/token` (TUI 1: T1.2; contract documented, endpoint pending)
-- [ ] Implement Candidate Import — `POST /api/candidates/import` (TUI 1: T1.4; contract documented, endpoint pending)
-- [ ] Router validation for new endpoints (TUI 2: T2.6)
-- [ ] Write tests for webhook, auth, import APIs (TUI 3)
-- [x] Update API reference documentation (TUI 4)
+- [x] Implement Auth/API Key — `POST /api/auth/token` (TUI 1: T1.2)
+- [x] Implement Candidate Import — `POST /api/candidates/import` (TUI 1: T1.4)
+- [x] Router validation for new endpoints (TUI 2: T2.6)
+- [x] Write tests for webhook, auth, import APIs via Playwright (TUI 3)
+- [x] Update API reference documentation & scraper bridge script (TUI 4)
 - [x] Create Playwright scraper bridge for candidate-import JSON (TUI 4; awaits import endpoint)
 
 ## Phase 3: Advanced APIs + Integration (Week 5-6)
