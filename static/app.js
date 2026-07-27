@@ -1064,9 +1064,9 @@ if (socialLabelBtn) {
     }
 
     // Switch to Analyze tab and trigger scoring
-    document.getElementById("candidate-label").value = label;
-    document.getElementById("job-role").value        = role;
-    document.getElementById("posts-sample").value    = posts;
+    document.getElementById("candidate_label").value = label;
+    document.getElementById("job_role").value        = role;
+    document.getElementById("posts_sample").value    = posts;
 
     // Trigger main Analyze tab
     document.getElementById("tab-btn-score").click();
