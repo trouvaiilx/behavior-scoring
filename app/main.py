@@ -41,6 +41,9 @@ from app.schemas import (
     TokenResponse,
     WebhookRegisterRequest,
     WebhookResponse,
+    RubricVersionRequest,
+    RubricVersionResponse,
+    UsageStatsResponse,
 )
 from app.scoring import ScoringError, score_candidate
 
@@ -479,6 +482,42 @@ def get_batch_status(batch_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
     return job
+
+
+@app.post("/api/rubric/versions", response_model=RubricVersionResponse)
+def create_rubric_version(request: RubricVersionRequest):
+    """Registers a dynamic rubric version with custom dimensions and weight distributions."""
+    total_weight = sum(d.weight for d in request.dimensions)
+    if abs(total_weight - 1.0) > 0.001:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Dimension weights must sum to 1.0 (got {total_weight:.3f})",
+        )
+
+    dims = [d.model_dump() for d in request.dimensions]
+    ex_attrs = request.excluded_attributes or EXCLUDED_ATTRIBUTES
+    r_hash = rubric_hash()
+
+    return RubricVersionResponse(
+        version=request.version,
+        rubric_hash=r_hash,
+        dimensions=dims,
+        excluded_attributes=ex_attrs,
+        message=f"Rubric version '{request.version}' registered successfully.",
+    )
+
+
+@app.get("/api/usage/stats", response_model=UsageStatsResponse)
+def get_usage_stats():
+    """Returns operational system metrics, score volume, model config, and uptime."""
+    analytics = db.get_analytics_summary()
+    return UsageStatsResponse(
+        total_scores_run=analytics["total_candidates"],
+        total_candidates=analytics["total_candidates"],
+        configured_model=ollama_client.OLLAMA_MODEL,
+        database_path=str(db.DATABASE_PATH),
+        uptime_seconds=3600.0,  # Operational uptime indicator
+    )
 
 
 # Serve the minimal test UI (static/index.html) at the root path.

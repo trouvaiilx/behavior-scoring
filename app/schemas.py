@@ -254,3 +254,32 @@ class LiveSearchRequest(BaseModel):
     job_role: str = Field(default="", max_length=200)
 
 
+class RubricDimensionInput(BaseModel):
+    key: str = Field(..., min_length=1, max_length=100)
+    label: str = Field(..., min_length=1, max_length=200)
+    weight: float = Field(..., ge=0.0, le=1.0)
+    description: str = Field(..., min_length=1, max_length=1000)
+
+
+class RubricVersionRequest(BaseModel):
+    version: str = Field(..., min_length=1, max_length=50)
+    dimensions: list[RubricDimensionInput] = Field(..., min_length=1)
+    excluded_attributes: list[str] | None = Field(default=None)
+
+
+class RubricVersionResponse(BaseModel):
+    version: str
+    rubric_hash: str
+    dimensions: list[dict]
+    excluded_attributes: list[str]
+    message: str
+
+
+class UsageStatsResponse(BaseModel):
+    total_scores_run: int
+    total_candidates: int
+    configured_model: str
+    database_path: str
+    uptime_seconds: float
+
+

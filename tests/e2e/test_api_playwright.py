@@ -81,3 +81,28 @@ def test_live_search_candidate_endpoint(api_request: APIRequestContext):
     assert "composite_score" in payload
     assert "red_flag" in payload
 
+
+def test_create_rubric_version_endpoint(api_request: APIRequestContext):
+    payload = {
+        "version": "0.3.0-custom",
+        "dimensions": [
+            {"key": "code_quality", "label": "Code Quality", "weight": 0.5, "description": "Cleanliness and maintainability of code."},
+            {"key": "system_design", "label": "System Design", "weight": 0.5, "description": "Architectural consistency."},
+        ],
+    }
+    response = api_request.post("/api/rubric/versions", data=payload)
+    assert response.status == 200
+    res = response.json()
+    assert res["version"] == "0.3.0-custom"
+    assert len(res["dimensions"]) == 2
+
+
+def test_get_usage_stats_endpoint(api_request: APIRequestContext):
+    response = api_request.get("/api/usage/stats")
+    assert response.status == 200
+    res = response.json()
+    assert "total_scores_run" in res
+    assert "configured_model" in res
+    assert "database_path" in res
+
+
