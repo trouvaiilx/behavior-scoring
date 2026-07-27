@@ -170,13 +170,67 @@ def _build_user_prompt(profile: CandidateProfileInput) -> str:
 """
 
 
+def _iter_balanced_json_objects(text: str):
+    """Yields every top-level balanced {...} substring in `text`, in order
+    of appearance, tracking string literals/escapes so that braces inside
+    quoted strings don't throw off the depth count.
+
+    This replaces a greedy `re.search(r"\\{.*\\}")` fallback, which spans
+    from the *first* '{' in the whole text to the *last* '}' -- if a model
+    wraps valid JSON in commentary that itself contains stray braces (e.g.
+    "Sure! Here's the {result}: {...real json...} let me know if {anything}
+    is unclear"), the greedy regex can capture garbage or fail to isolate
+    the actual object. Scanning for genuinely balanced objects and trying
+    each one in turn is more robust to that kind of preamble/postamble.
+    """
+    n = len(text)
+    i = 0
+    while i < n:
+        if text[i] != "{":
+            i += 1
+            continue
+
+        depth = 0
+        in_string = False
+        escape = False
+        start = i
+        j = i
+        found_end = None
+        while j < n:
+            ch = text[j]
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+            else:
+                if ch == '"':
+                    in_string = True
+                elif ch == "{":
+                    depth += 1
+                elif ch == "}":
+                    depth -= 1
+                    if depth == 0:
+                        found_end = j
+                        break
+            j += 1
+
+        if found_end is not None:
+            yield text[start : found_end + 1]
+            i = found_end + 1
+        else:
+            i = start + 1
+
+
 def _extract_json(raw_text: str) -> dict:
     """Ollama with format=json should return clean JSON, but smaller/local
     models don't always comply cleanly. We defensively:
     1. Strip leading/trailing markdown code fences.
-    2. If that still doesn't parse, fall back to locating the first
-       balanced-looking {...} block anywhere in the text and parsing that,
-       in case the model added commentary before/after the JSON.
+    2. If that still doesn't parse, scan for balanced {...} objects
+       anywhere in the text (see _iter_balanced_json_objects) and try each
+       in turn, in case the model added commentary before/after the JSON.
     """
     text = raw_text.strip()
     text = re.sub(r"^```(json)?", "", text.strip())
@@ -188,14 +242,18 @@ def _extract_json(raw_text: str) -> dict:
     except json.JSONDecodeError:
         pass
 
-    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
-    if match:
+    last_error = None
+    for candidate in _iter_balanced_json_objects(text):
         try:
-            return json.loads(match.group(0))
+            return json.loads(candidate)
         except json.JSONDecodeError as e:
-            raise ScoringError(
-                f"Model output was not valid JSON: {e}\nRaw output: {raw_text[:1000]}"
-            ) from e
+            last_error = e
+            continue
+
+    if last_error is not None:
+        raise ScoringError(
+            f"Model output was not valid JSON: {last_error}\nRaw output: {raw_text[:1000]}"
+        ) from last_error
 
     raise ScoringError(
         f"Model output contained no JSON object.\nRaw output: {raw_text[:1000]}"

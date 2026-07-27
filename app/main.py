@@ -39,8 +39,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-_batch_store: dict[str, dict] = {}
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -68,37 +66,46 @@ app.add_middleware(
 
 
 async def _process_batch_job(batch_id: str, profiles: list[CandidateProfileInput]):
-    job = _batch_store[batch_id]
-    job["status"] = "processing"
+    """Scores each profile in turn, persisting progress to the batch_jobs
+    table after every item (see app/db.py::append_batch_result) rather than
+    holding job state in a process-local dict. This means job status/
+    results survive a server restart, and GET /api/scores/batch/{id} always
+    reflects the last state a running process actually reached."""
     for profile in profiles:
         try:
             res = await score_candidate(profile)
             sid = db.save_score(res)
             res.id = sid
-            job["results"].append(
+            db.append_batch_result(
+                batch_id,
                 {
                     "candidate_label": profile.candidate_label,
                     "status": "completed",
                     "score_result": res.model_dump(),
                     "error": None,
-                }
+                },
+                succeeded=True,
             )
-            job["completed_items"] += 1
         except Exception as e:  # noqa: BLE001
             logger.error(
                 "Batch item failed for candidate '%s': %s", profile.candidate_label, e
             )
-            job["results"].append(
+            db.append_batch_result(
+                batch_id,
                 {
                     "candidate_label": profile.candidate_label,
                     "status": "failed",
                     "score_result": None,
                     "error": str(e),
-                }
+                },
+                succeeded=False,
             )
-            job["failed_items"] += 1
 
-    job["status"] = "completed" if job["failed_items"] < len(profiles) else "failed"
+    job = db.get_batch_job(batch_id)
+    failed_items = job["failed_items"] if job else 0
+    db.finalize_batch_job(
+        batch_id, "completed" if failed_items < len(profiles) else "failed"
+    )
 
 
 @app.get("/api/health")
@@ -385,22 +392,18 @@ def delete_score_run(score_id: int):
 @app.post("/api/scores/batch", response_model=BatchJobStatusResponse)
 async def create_batch_score(req: BatchScoreRequest, background_tasks: BackgroundTasks):
     batch_id = str(uuid.uuid4())[:8]
-    job_status = {
-        "batch_id": batch_id,
-        "status": "processing",
-        "total_items": len(req.profiles),
-        "completed_items": 0,
-        "failed_items": 0,
-        "results": [],
-    }
-    _batch_store[batch_id] = job_status
+    # Opportunistic cleanup instead of a separate scheduler: each new batch
+    # submission is a natural, low-cost point to sweep out old job rows so
+    # the table doesn't grow unbounded over a long-running server process.
+    db.cleanup_old_batch_jobs()
+    job_status = db.create_batch_job(batch_id, len(req.profiles))
     background_tasks.add_task(_process_batch_job, batch_id, req.profiles)
     return job_status
 
 
 @app.get("/api/scores/batch/{batch_id}", response_model=BatchJobStatusResponse)
 def get_batch_status(batch_id: str):
-    job = _batch_store.get(batch_id)
+    job = db.get_batch_job(batch_id)
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
     return job
