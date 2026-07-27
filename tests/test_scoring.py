@@ -37,6 +37,26 @@ def test_extract_json_garbage_raises():
         _extract_json("this is not json at all")
 
 
+def test_extract_json_with_braces_in_preamble_and_postamble():
+    """A greedy `{.*}` regex would span from the '{result}' preamble brace
+    all the way to the trailing '{anything}' brace and fail to parse. The
+    balanced-object scanner should isolate the real JSON object instead."""
+    raw = (
+        "Sure, here's the {result} you asked for:\n"
+        '{"a": 1, "b": [1, 2]}\n'
+        "Let me know if {anything} else is needed!"
+    )
+    assert _extract_json(raw) == {"a": 1, "b": [1, 2]}
+
+
+def test_extract_json_with_nested_braces_and_string_braces():
+    raw = 'blah {"a": {"nested": 1}, "b": "text with a } brace inside"} blah'
+    assert _extract_json(raw) == {
+        "a": {"nested": 1},
+        "b": "text with a } brace inside",
+    }
+
+
 # ---------------------------------------------------------------------------
 # _safe_score
 # ---------------------------------------------------------------------------
