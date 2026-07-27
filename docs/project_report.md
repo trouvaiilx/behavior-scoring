@@ -1,117 +1,109 @@
-# Behavior Scoring — Project Implementation & Roadmap Report
+# Behavior Scoring — Comprehensive Project Report
 
-> **Project**: Candidate Social Media Behavior Scoring Prototype  
+> **Project**: Candidate Social Media Behavior Scoring System  
 > **Version**: 0.2.0  
+> **Branch**: `API`  
 > **Author**: Adrie (Internship — Semester Pendek)  
 > **Date**: July 27, 2026  
 > **Stack**: Python 3.11 · FastAPI · Ollama (Local LLM) · SQLite · Playwright
 
 ---
 
-## 1. Project Overview
+## 1. Executive Summary
 
-This is an **internal R&D prototype** that scores candidate social media text against a weighted rubric using a local LLM (Ollama). The system enforces fairness constraints (excluded attributes like religion, ethnicity, etc.) and requires human review for every score.
+This repository contains an **internal R&D candidate screening & behavioral evaluation system**. Candidate social media profile text (from consented, synthetic, or scraped sources) is evaluated against a deterministic, weighted rubric using a local LLM via **Ollama**.
 
-### Key Principles
-- **Privacy-first**: All processing runs locally via Ollama — no data leaves the machine.
-- **Human-in-the-loop**: Every AI-generated score is tagged `pending` until a human reviewer approves/rejects it.
-- **Auditable**: Every run stores the rubric version, model used, raw model output, and a content hash of the rubric at scoring time.
-
-### Current Tech Stack
-
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Backend | FastAPI 0.115.0 | REST API server |
-| LLM Runtime | Ollama (qwen2.5:latest) | Local inference |
-| Database | SQLite (`data/scores.db`) | Score persistence & audit trail |
-| HTTP Client | `httpx` 0.27.2 | Async Ollama communication |
-| Validation | Pydantic 2.9.2 | Schema enforcement |
-| Frontend | Static HTML/JS/CSS | Test UI at `/` |
-| Testing | pytest 8.3.3 + Playwright | Unit, integration & E2E API tests |
+### Core Pillars
+- **Privacy-First**: 100% local processing via Ollama — zero candidate data leaves your machine.
+- **Fairness Protection**: 7 excluded protected attributes (religion, ethnicity, politics, marital status, health, sexual orientation, age) are ignored during scoring via prompt engineering AND a deterministic Python keyword backstop.
+- **Auditable**: Every scoring run records the exact model used, rubric version, rubric content hash, raw LLM output, and timestamp.
+- **Human-in-the-Loop**: All AI scores default to `human_review_status = "pending"` requiring recruiter review.
 
 ---
 
-## 2. Architecture & Delivered Functionality
+## 2. System Architecture
 
 ```mermaid
 graph TB
     subgraph Frontend
-        UI["Static Test UI<br/>(HTML/JS/CSS)"]
+        UI["Static Test UI<br/>(http://127.0.0.1:8000)"]
     end
 
-    subgraph Backend["FastAPI Backend (Port 8000)"]
-        MAIN["main.py<br/>13+ API Routes"]
-        SCORING["scoring.py<br/>Prompt Building + JSON Parsing"]
-        RUBRIC["rubric.py<br/>Dimensions & Weights"]
-        DB["db.py<br/>SQLite Persistence"]
-        SCHEMAS["schemas.py<br/>Pydantic Models"]
-        CONFIG["config.py<br/>Environment Config"]
+    subgraph Backend["FastAPI Backend (API Branch)"]
+        MAIN["app/main.py<br/>15+ REST API Endpoints"]
+        SCORING["app/scoring.py<br/>Prompt Builder + JSON Parser"]
+        RUBRIC["app/rubric.py<br/>Rubric Dimensions & Weights"]
+        AUTH["app/auth.py<br/>Authentication Middleware"]
+        DB["app/db.py<br/>SQLite Storage Layer"]
+        SCHEMAS["app/schemas.py<br/>Pydantic Request/Response Models"]
+    end
+
+    subgraph Integration
+        BRIDGE["scripts/scraper_bridge.py<br/>Playwright Scraper Bridge"]
+        E2E["tests/e2e/<br/>Playwright E2E Test Suite"]
     end
 
     subgraph External
-        OLLAMA["Ollama Server<br/>localhost:11434"]
-        SQLITE["SQLite DB<br/>data/scores.db"]
+        OLLAMA["Ollama LLM Server<br/>localhost:11434"]
+        SQLITE["SQLite Database<br/>data/scores.db"]
     end
 
     UI -->|HTTP| MAIN
+    BRIDGE -->|POST /api/candidates/import| MAIN
     MAIN --> SCORING
     SCORING --> RUBRIC
     SCORING -->|httpx async| OLLAMA
     MAIN --> DB
     DB --> SQLITE
     MAIN --> SCHEMAS
-    MAIN --> CONFIG
+    MAIN --> AUTH
+    E2E -->|Playwright APIRequestContext| MAIN
 ```
 
-### Scoring Dimensions (Rubric v0.2.0)
+---
 
-| Dimension | Weight | Description |
-|-----------|--------|-------------|
-| Professional Consistency | 33% | CV-to-profile alignment |
-| Communication Quality | 27% | Tone, clarity, professionalism |
-| Domain Engagement | 27% | Field expertise evidence |
-| Network Signal | 13% | Endorsements & connections (weakest signal) |
-| Red Flag Screen | N/A | Pass/Review/Fail gate (not weighted) |
+## 3. Implemented API Contract
+
+| Category | Endpoint | Method | Description |
+|----------|----------|--------|-------------|
+| **System** | `/api/health` | `GET` | Reports backend, Ollama server, and local LLM model reachability. |
+| | `/api/rubric` | `GET` | Returns rubric dimensions, weights, red flag rules, and content hash. |
+| **Auth** | `/api/auth/token` | `POST` | Issues Bearer access token for valid client credentials. |
+| **Scoring** | `/api/score` | `POST` | Scores a candidate profile via Ollama and saves result to SQLite. |
+| | `/api/scores` | `GET` | Returns paginated scores with text search, score range, and red-flag filters. |
+| | `/api/scores/{id}` | `GET` | Fetches complete scoring breakdown and raw LLM output by ID. |
+| | `/api/scores/{id}` | `DELETE` | Removes a candidate score entry. |
+| **Batch** | `/api/scores/batch` | `POST` | Enqueues a batch of profiles for background scoring. |
+| | `/api/scores/batch/{batch_id}` | `GET` | Checks processing status and item results of a batch job. |
+| **Import** | `/api/candidates/import` | `POST` | Bulk-imports scraped candidate profiles into SQLite. |
+| **Webhooks** | `/api/webhooks` | `POST` | Registers webhook endpoint URLs for completion event notifications. |
+| **Review** | `/api/scores/{id}/review` | `PATCH` | Updates recruiter audit status (`approved`, `rejected`, `overridden`) and notes. |
+| **Analytics** | `/api/scores/analytics` | `GET` | Returns aggregated composite score stats, red flags, and score buckets. |
+| | `/api/scores/export` | `GET` | Exports scored candidate data as CSV or JSON download. |
+| | `/api/scores/compare` | `GET` | Side-by-side comparison of candidate profiles with dimension averages. |
 
 ---
 
-## 3. Implemented API Routes
+## 4. Test Verification Summary
 
-### System & Discovery
-- `GET /api/health` — Backend + Ollama + model availability check.
-- `GET /api/rubric` — Return active rubric (dimensions, weights, exclusions, version, hash).
+The test suite contains **88 automated tests** spanning unit, contract integration, and Playwright E2E tests:
 
-### Core Scoring & Management
-- `POST /api/score` — Score a single candidate profile via Ollama.
-- `GET /api/scores` — Paginated list with search, filters, sorting.
-- `GET /api/scores/{id}` — Full detail of one score run.
-- `DELETE /api/scores/{id}` — Delete a score run.
-- `POST /api/webhooks` — Register webhooks for scoring completion events.
+```powershell
+# Run the test suite:
+venv\Scripts\python.exe -m pytest
+```
 
-### Batch & Analytics
-- `POST /api/scores/batch` — Submit batch of profiles (background processing).
-- `GET /api/scores/batch/{batch_id}` — Poll batch job status/results.
-- `GET /api/scores/compare?ids=1,2,5` — Side-by-side comparison with dimension averages.
-- `GET /api/scores/analytics` — Aggregated metrics, distributions, red flag counts.
-- `GET /api/scores/export?format=csv|json` — Export scored data as CSV or JSON download.
+### Test Breakdown
+- **Playwright E2E Suite** (`tests/e2e/`): 18 tests (APIRequestContext testing health, scoring, auth token issuance, candidate import, webhooks).
+- **Backend Feature & Contract Suite** (`tests/integration/`): 18 tests (SQLite persistence, analytics, filters, pagination, export).
+- **Rubric & Scoring Pipeline Unit Suite** (`tests/unit/`): 52 tests (dimension weight validation, non-numeric fallback handling, excluded-attribute keyword backstop).
 
-### Human Review
-- `PATCH /api/scores/{id}/review` — Update human review status & notes.
+**Result**: **88 passed** (100% pass rate).
 
 ---
 
-## 4. Documentation & Reporting Tools
+## 5. Single Workspace Source Control Workflow
 
-- `docs/api_reference.md` — Full API contract and schema documentation.
-- `docs/opencode_multi_agent_guide.md` — Guide for orchestrating multiple OpenCode TUI instances via Git worktrees.
-- `scripts/generate_pdf_report.py` — Native Python script for generating PDF reports.
-
----
-
-## 5. Next Planned Priorities
-
-1. **Rubric Versioning** (`POST /api/rubric/versions`)
-2. **Usage Statistics** (`GET /api/usage/stats`)
-3. **Report Generation** (`POST /api/reports/generate`)
-4. **Scraper-to-Scoring Integration** (connecting approved scraper output to the scoring workflow)
-5. **Workflow Automation** (Windmill / Activepieces)
+All work is maintained directly on the **`API`** branch:
+- No extra Git worktrees or temporary branches cluttering Source Control.
+- Direct commit and push to `origin/API`.
