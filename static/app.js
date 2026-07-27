@@ -1001,7 +1001,83 @@ async function pollBatch(batchId, totalItems) {
 }
 
 // ================================================================
+// SOCIAL & SCRAPE TAB HANDLERS
+// ================================================================
+const scrapeFileInput  = document.getElementById("scrape-file-input");
+const scrapeUploadBtn  = document.getElementById("scrape-upload-btn");
+const scrapeResultBox  = document.getElementById("scrape-upload-result");
+
+const socialLabelBtn   = document.getElementById("social-score-btn");
+const socialLabelInput = document.getElementById("social-label");
+const socialRoleInput  = document.getElementById("social-role");
+const socialPostsInput = document.getElementById("social-posts");
+
+if (scrapeUploadBtn) {
+  scrapeUploadBtn.addEventListener("click", async () => {
+    if (!scrapeFileInput.files || scrapeFileInput.files.length === 0) {
+      showToast("Please select a scraped JSON file first.", "error");
+      return;
+    }
+
+    const file = scrapeFileInput.files[0];
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const profiles = Array.isArray(payload) ? payload : (payload.profiles || [payload]);
+
+      scrapeResultBox.innerHTML = `<span class="muted-text">Uploading ${profiles.length} profile(s)...</span>`;
+      const res = await fetch("/api/candidates/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profiles }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Import failed");
+      }
+
+      const data = await res.json();
+      scrapeResultBox.innerHTML = `<span style="color:#10b981;">✓ Imported ${data.imported_count} candidates successfully (IDs: ${data.candidate_ids.join(", ")})</span>`;
+      showToast(`Imported ${data.imported_count} candidate profiles!`, "success");
+      loadHistory();
+    } catch (e) {
+      scrapeResultBox.innerHTML = `<span style="color:#ef4444;">✗ Error: ${escapeHtml(e.message)}</span>`;
+      showToast(`Import error: ${e.message}`, "error");
+    }
+  });
+}
+
+if (socialLabelBtn) {
+  socialLabelBtn.addEventListener("click", async () => {
+    const label = socialLabelInput.value.trim();
+    const role  = socialRoleInput.value.trim();
+    const posts = socialPostsInput.value.trim();
+
+    if (!label) {
+      showToast("Please enter a Candidate Name / Label.", "error");
+      return;
+    }
+    if (!posts) {
+      showToast("Please enter scraped social media posts or bio text.", "error");
+      return;
+    }
+
+    // Switch to Analyze tab and trigger scoring
+    document.getElementById("candidate-label").value = label;
+    document.getElementById("job-role").value        = role;
+    document.getElementById("posts-sample").value    = posts;
+
+    // Trigger main Analyze tab
+    document.getElementById("tab-btn-score").click();
+    showToast(`Submitting social profile '${label}' for LLM analysis...`, "info");
+    document.getElementById("submit-btn").click();
+  });
+}
+
+// ================================================================
 // INIT
 // ================================================================
 checkHealth();
 loadHistory();
+
