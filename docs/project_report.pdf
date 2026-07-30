@@ -1,0 +1,2893 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R] /Count 12 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 4461 >>
+stream
+BT
+/F2 18 Tf
+1 0 0 1 54 738 Tm
+(Behavior Scoring - Project Documentation) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 705 Tm
+(Source: docs/api_reference.md) Tj
+ET
+BT
+/F2 16 Tf
+1 0 0 1 54 690 Tm
+(API Reference) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 661 Tm
+(Overview) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 636 Tm
+(This reference describes the HTTP API implemented in app/main.py for the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 624 Tm
+(Behavior Scoring prototype, version 0.2.0. It is intended for local R&D use) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 612 Tm
+(with synthetic, sample, or explicitly consented text only. It is not a) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 600 Tm
+(production hiring-decision API.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 581 Tm
+(Default base URL: http://127.0.0.1:8000) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 562 Tm
+(The currently mounted routes do not enforce authentication or authorization.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 550 Tm
+(POST /api/auth/token issues a development bearer token, but no route yet) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 538 Tm
+(validates that token. Requests and JSON responses use application/json unless) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 526 Tm
+(an endpoint explicitly returns a download.) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 507 Tm
+(Endpoint Index) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 482 Tm
+(Method | Path | Purpose) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 470 Tm
+(GET | /api/health | Check backend and local Ollama availability.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 458 Tm
+(GET | /api/rubric | Return the active scoring rubric and exclusions.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 446 Tm
+(POST | /api/score | Score and persist one candidate profile.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 434 Tm
+(POST | /api/webhooks | Register an event webhook.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 422 Tm
+(POST | /api/auth/token | Exchange client credentials for a development bearer token.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 410 Tm
+(POST | /api/candidates/import | Persist up to 100 imported candidate profiles.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 398 Tm
+(GET | /api/scores | List persisted score runs with filters and pagination.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 386 Tm
+(GET | /api/scores/analytics | Return aggregate score and review metrics.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 374 Tm
+(GET | /api/scores/export | Download filtered score runs as CSV or JSON.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 362 Tm
+(GET | /api/scores/compare | Compare selected persisted score runs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 350 Tm
+(GET | /api/scores/{score_id} | Return one persisted score run.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 338 Tm
+(PATCH | /api/scores/{score_id}/review | Record a human-review outcome.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 326 Tm
+(DELETE | /api/scores/{score_id} | Delete one persisted score run.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 314 Tm
+(POST | /api/scores/batch | Start asynchronous scoring for up to 20 profiles.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 302 Tm
+(GET | /api/scores/batch/{batch_id} | Poll an in-memory batch job.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 283 Tm
+(The server also exposes the static test UI at / and FastAPI-generated) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 271 Tm
+(documentation at /docs, /redoc, and /openapi.json.) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 252 Tm
+(Common Behavior) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 227 Tm
+(- A validation failure returns 422 Unprocessable Entity using FastAPI's) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 215 Tm
+(standard detail error array. This applies to malformed JSON, missing) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 203 Tm
+(required fields, invalid path/query types, and declared field constraints.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 191 Tm
+(- Endpoint-specific failures return an object shaped as) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 179 Tm
+({ "detail": "message" }.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 167 Tm
+(- Timestamps use ISO 8601 UTC strings when present.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 155 Tm
+(- Scores are persisted in the local SQLite database configured by) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 143 Tm
+(DATABASE_PATH \(default: data/scores.db\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 131 Tm
+(- red_flag.status is one of pass, review, or fail. It is a separate) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 119 Tm
+(screening gate and is not included in the composite-score calculation.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 107 Tm
+(- Human-review statuses are pending, approved, rejected, and) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 95 Tm
+(overridden.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 83 Tm
+(- Candidate imports are stored in the separate candidates table. Importing a) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 71 Tm
+(profile does not create a score run or queue scoring.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 4373 >>
+stream
+BT
+/F2 13 Tf
+1 0 0 1 54 731 Tm
+(Shared Schemas) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 706 Tm
+(CandidateProfileInput) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 685 Tm
+(Used by POST /api/score, POST /api/scores/batch, and each profiles item) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 673 Tm
+(in POST /api/candidates/import.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 654 Tm
+(Field | Type | Required | Constraints and meaning) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 642 Tm
+(candidate_label | string | Yes | Trimmed non-blank label; 1-200 characters. Use a) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 630 Tm
+(non-identifying label such as sample_001.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 618 Tm
+(job_role | string | No | Defaults to ""; maximum 200 characters. Target role used as scoring) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 606 Tm
+(context.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 594 Tm
+(cv_claims | string | No | Defaults to ""; maximum MAX_FIELD_CHARS characters \(8,000 by default\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 582 Tm
+(Resume/CV claims used for consistency checks.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 570 Tm
+(profile_about | string | No | Defaults to ""; maximum MAX_FIELD_CHARS characters. Public) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 558 Tm
+(bio/about text.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 546 Tm
+(posts_sample | string | No | Defaults to ""; maximum MAX_FIELD_CHARS characters. Plain-text) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 534 Tm
+(sample of posts or articles.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 522 Tm
+(comments_sample | string | No | Defaults to ""; maximum MAX_FIELD_CHARS characters. Plain-text) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 510 Tm
+(sample of comments or interactions.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 498 Tm
+(network_notes | string | No | Defaults to ""; maximum MAX_FIELD_CHARS characters. Notes about) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 486 Tm
+(endorsements or professional connections.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 467 Tm
+(MAX_FIELD_CHARS can be overridden with an environment variable. Text fields) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 455 Tm
+(are trimmed before scoring.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 436 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 417 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 407 Tm
+(  "candidate_label": "sample_001",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 397 Tm
+(  "job_role": "Backend Engineer",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 387 Tm
+(  "cv_claims": "Software Engineer, 2022-2024. Python and SQL.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 377 Tm
+(  "profile_about": "Backend engineer interested in distributed systems.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 367 Tm
+(  "posts_sample": "Wrote about database indexing strategies.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 357 Tm
+(  "comments_sample": "Helpful technical comments on engineering posts.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 347 Tm
+(  "network_notes": "Several relevant endorsements.") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 337 Tm
+(}) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 320 Tm
+(WebhookRegisterRequest and WebhookResponse) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 299 Tm
+(Used by POST /api/webhooks.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 280 Tm
+(Request field | Type | Required | Constraints and meaning) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 268 Tm
+(url | string | Yes | Trimmed HTTP or HTTPS URL with a host; 1-2,048 characters.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 256 Tm
+(events | string array | No | Defaults to []; maximum 20 items. Values are trimmed and cannot be) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 244 Tm
+(blank.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 225 Tm
+(WebhookResponse returns the persisted id \(integer\), url \(string\),) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 213 Tm
+(events \(string array\), and created_at \(ISO 8601 UTC string\).) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 194 Tm
+(TokenRequest and TokenResponse) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 173 Tm
+(Used by POST /api/auth/token.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 154 Tm
+(Request field | Type | Required | Constraints and behavior) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 142 Tm
+(client_id | string | Yes | Required identifier; 1-200 characters. The current prototype) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 130 Tm
+(validates its presence and length but does not look it up.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 118 Tm
+(client_secret | string | Yes | Required shared secret; 1-512 characters. It must match the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 106 Tm
+(configured API_SECRET_KEY.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 87 Tm
+(TokenResponse contains access_token \(string\) and token_type \(always) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 75 Tm
+("bearer"\). The current prototype returns the configured shared secret itself) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 8 0 R >>
+endobj
+8 0 obj
+<< /Length 4887 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(as access_token; it does not issue unique tokens, expiry times, or refresh) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(tokens. Treat this endpoint as local development-only functionality and do not) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 714 Tm
+(log either credential or token.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 695 Tm
+(CandidateImportRequest and CandidateImportResponse) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 674 Tm
+(Used by POST /api/candidates/import. The bridge posts its normalized scraper) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 662 Tm
+(output in the profiles field.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 643 Tm
+(Request field | Type | Required | Constraints and behavior) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 631 Tm
+(profiles | array of CandidateProfileInput | Conditionally | Provide a non-empty list of up to) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 619 Tm
+(100 profiles. Each item follows CandidateProfileInput validation. Do not supply this field with) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 607 Tm
+(json_file.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 595 Tm
+(json_file | string | Conditionally | Provide JSON text containing either a non-empty profile) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 583 Tm
+(array or { "profiles": [...] }. Maximum length is MAX_FIELD_CHARS * 100 \(800,000 by default\). Do) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 571 Tm
+(not supply this field with profiles.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 552 Tm
+(CandidateImportResponse contains imported_count \(integer\), candidate_ids) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 540 Tm
+(\(integer array\), and status \(always "success"\). IDs identify records in the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 528 Tm
+(local candidates table, not score-run IDs.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 509 Tm
+(ScoreResult) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 488 Tm
+(Returned by successful scoring, score detail, review update, comparison, and) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 476 Tm
+(completed batch items.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 457 Tm
+(Field | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 445 Tm
+(id | integer or null | SQLite score-run identifier. It is populated after persistence.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 433 Tm
+(candidate_label | string | Label supplied in the request.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 421 Tm
+(job_role | string | Target role context; empty when not supplied.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 409 Tm
+(rubric_version | string | Human-managed rubric version used for the run.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 397 Tm
+(rubric_hash | string | Twelve-character fingerprint of rubric content at scoring time.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 385 Tm
+(model_used | string | Configured Ollama model name.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 373 Tm
+(overall_summary | string | Model-generated plain-language profile summary.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 361 Tm
+(dimension_scores | array of DimensionScore | One result for each active rubric dimension.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 349 Tm
+(composite_score | number | Weighted 0-100 score, rounded to one decimal.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 337 Tm
+(red_flag | RedFlagResult | Separate pass/review/fail screening result.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 325 Tm
+(human_review | HumanReviewInfo | Human-review state; initially pending.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 313 Tm
+(excluded_attributes_detected | string array | Protected attributes detected but explicitly) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 301 Tm
+(excluded from scoring.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 289 Tm
+(raw_model_output | string | Unprocessed JSON text returned by the local model.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 277 Tm
+(created_at | string or null | UTC persistence timestamp.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 258 Tm
+(DimensionScore contains key \(string\), label \(string\), score \(number\),) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 246 Tm
+(and rationale \(string\). RedFlagResult contains status and rationale.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 234 Tm
+(HumanReviewInfo contains status, notes, and reviewed_at \(an ISO 8601) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 222 Tm
+(string or null\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 203 Tm
+(Example abbreviated response:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 184 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 174 Tm
+(  "id": 42,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 164 Tm
+(  "candidate_label": "sample_001",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 154 Tm
+(  "job_role": "Backend Engineer",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 144 Tm
+(  "rubric_version": "0.2.0",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 134 Tm
+(  "rubric_hash": "abc123def456",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 124 Tm
+(  "model_used": "llama3.1",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 114 Tm
+(  "overall_summary": "Consistent technical profile with clear communication.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 104 Tm
+(  "dimension_scores": [) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 94 Tm
+(    {) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 84 Tm
+(      "key": "professional_consistency",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 74 Tm
+(      "label": "Professional Consistency",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 64 Tm
+(      "score": 82.0,) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 10 0 R >>
+endobj
+10 0 obj
+<< /Length 3750 >>
+stream
+BT
+/F1 8 Tf
+1 0 0 1 54 738 Tm
+(      "rationale": "Claims align with supplied profile text.") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 728 Tm
+(    }) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 718 Tm
+(  ],) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 708 Tm
+(  "composite_score": 80.5,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 698 Tm
+(  "red_flag": { "status": "pass", "rationale": "No concerns found." },) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 688 Tm
+(  "human_review": { "status": "pending", "notes": "", "reviewed_at": null },) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 678 Tm
+(  "excluded_attributes_detected": [],) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 668 Tm
+(  "raw_model_output": "{...}",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 658 Tm
+(  "created_at": "2026-07-27T12:34:56.789012+00:00") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 648 Tm
+(}) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 631 Tm
+(Endpoints) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 606 Tm
+(GET /api/health) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 585 Tm
+(Reports application health and whether Ollama is reachable. The endpoint) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 573 Tm
+(returns 200 OK even when Ollama is unavailable; inspect ollama.reachable.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 554 Tm
+(Parameters: none.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 535 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 516 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 506 Tm
+(  "backend": "ok",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 496 Tm
+(  "ollama": {) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 486 Tm
+(    "reachable": true,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 476 Tm
+(    "configured_model": "llama3.1",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 466 Tm
+(    "model_available_locally": true,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 456 Tm
+(    "installed_models": ["llama3.1:latest"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 446 Tm
+(  }) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 436 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 419 Tm
+(When the Ollama check fails, ollama instead contains reachable: false,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 407 Tm
+(configured_model, and an error string.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 388 Tm
+(GET /api/rubric) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 367 Tm
+(Returns the rubric currently used by scoring. It lets clients display the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 355 Tm
+(dimensions, weights, exclusion policy, and version that govern new runs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 336 Tm
+(Parameters: none.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 317 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 298 Tm
+(Field | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 286 Tm
+(dimensions | array | Objects with key, label, weight, and description. Current weights are 0.33,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 274 Tm
+(0.27, 0.27, and 0.13.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 262 Tm
+(red_flag_note | string | Explains that red-flag screening is a separate escalation gate.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 250 Tm
+(excluded_attributes | string array | Attributes that must not influence scores.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 238 Tm
+(rubric_version | string | Current configured version, 0.2.0.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 226 Tm
+(rubric_hash | string | Current twelve-character rubric-content fingerprint.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 207 Tm
+(POST /api/score) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 186 Tm
+(Scores one profile through the configured local Ollama model and persists the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 174 Tm
+(result in SQLite.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 155 Tm
+(Request body: a CandidateProfileInput <#candidateprofileinput> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 136 Tm
+(Success response \(200 OK\): a persisted) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 124 Tm
+(ScoreResult <#scoreresult>, including id and created_at.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 105 Tm
+(Error responses:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 86 Tm
+(Status | When returned) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 74 Tm
+(422 | The input body does not satisfy CandidateProfileInput.) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 12 0 R >>
+endobj
+12 0 obj
+<< /Length 3679 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(502 | The scoring pipeline cannot call or parse the configured Ollama model. The response detail) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(contains the scoring error.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 707 Tm
+(POST /api/webhooks) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 686 Tm
+(Registers a webhook destination and the event names it is interested in. The) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 674 Tm
+(route persists the registration locally; event delivery is not implemented by) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 662 Tm
+(the current prototype.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 643 Tm
+(Request body: a) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 631 Tm
+(WebhookRegisterRequest <#webhookregisterrequest-and-webhookresponse>) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 619 Tm
+(object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 600 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 581 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 571 Tm
+(  "url": "https://example.test/hooks/behavior-score",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 561 Tm
+(  "events": ["score.completed", "score.review_required"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 551 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 534 Tm
+(Success response \(201 Created\):) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 515 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 505 Tm
+(  "id": 7,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 495 Tm
+(  "url": "https://example.test/hooks/behavior-score",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 485 Tm
+(  "events": ["score.completed", "score.review_required"],) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 475 Tm
+(  "created_at": "2026-07-27T12:34:56.789012+00:00") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 465 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 448 Tm
+(Error response: 422 Unprocessable Entity when url is blank, is not an) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 436 Tm
+(HTTP\(S\) URL with a host, events has more than 20 values, or an event value is) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 424 Tm
+(blank.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 405 Tm
+(POST /api/auth/token) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 384 Tm
+(Exchanges client credentials for a development bearer token. The server) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 372 Tm
+(compares client_secret with API_SECRET_KEY using a constant-time comparison.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 360 Tm
+(The required client_id is currently not used for identity lookup.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 341 Tm
+(Request body: an) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 329 Tm
+(TokenRequest <#tokenrequest-and-tokenresponse> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 310 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 291 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 281 Tm
+(  "client_id": "local-scraper-bridge",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 271 Tm
+(  "client_secret": "configured-api-secret") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 261 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 244 Tm
+(Success response \(200 OK\): an) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 232 Tm
+(TokenResponse <#tokenrequest-and-tokenresponse> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 213 Tm
+(Error responses:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 194 Tm
+(Status | When returned) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 182 Tm
+(401 | client_secret does not match the configured shared secret. The response includes) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 170 Tm
+(WWW-Authenticate: Bearer.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 158 Tm
+(422 | The body is malformed, a credential is missing, or client_id/client_secret violates its) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 146 Tm
+(length constraint.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 127 Tm
+(The returned token is not currently required by any route, has no expiry, and) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 115 Tm
+(is not an authentication boundary. Do not expose this prototype endpoint) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 103 Tm
+(beyond a trusted local development environment.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 84 Tm
+(POST /api/candidates/import) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 14 0 R >>
+endobj
+14 0 obj
+<< /Length 4281 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(Persists normalized profiles from an approved scraper bridge into the local) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(candidates table. It does not score the profiles or create a batch job.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 714 Tm
+(Submit only sample, synthetic, or explicitly consented data with a valid legal) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 702 Tm
+(basis; this route must not be used to ingest scraped candidate data) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 690 Tm
+(indiscriminately.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 671 Tm
+(Request body: a CandidateImportRequest <#candidateimportrequest> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 652 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 633 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 623 Tm
+(  "profiles": [) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 613 Tm
+(    {) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 603 Tm
+(      "candidate_label": "consented_sample_001",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 593 Tm
+(      "job_role": "Backend Engineer",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 583 Tm
+(      "cv_claims": "Software Engineer, 2022-2024. Python and SQL.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 573 Tm
+(      "profile_about": "Backend engineer interested in distributed systems.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 563 Tm
+(      "posts_sample": "Wrote about database indexing strategies.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 553 Tm
+(      "comments_sample": "Helpful technical comments on engineering posts.",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 543 Tm
+(      "network_notes": "Several relevant endorsements.") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 533 Tm
+(    }) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 523 Tm
+(  ]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 513 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 496 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 477 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 467 Tm
+(  "imported_count": 1,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 457 Tm
+(  "candidate_ids": [17],) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 447 Tm
+(  "status": "success") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 437 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 420 Tm
+(candidate_ids contains the newly persisted local candidate-record IDs. They) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 408 Tm
+(cannot be passed to score-detail or batch-status routes, and no scoring is) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 396 Tm
+(started by this endpoint.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 377 Tm
+(The same import can be submitted from JSON-file contents:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 358 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 348 Tm
+(  "json_file": "{\\"profiles\\":[{\\"candidate_label\\":\\"consented_sample_001\\"}]}") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 338 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 321 Tm
+(Error responses:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 302 Tm
+(Status | When returned) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 290 Tm
+(422 | Neither or both import sources are provided, the supplied list is empty or has more than) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 278 Tm
+(100 entries, an individual profile fails CandidateProfileInput validation, or json_file is) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 266 Tm
+(invalid or exceeds its size limit.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 247 Tm
+(scripts/scraper_bridge.py accepts a JSON array, a single candidate object,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 235 Tm
+(or an envelope using candidates or profiles. It normalizes common scraper) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 223 Tm
+(field names into the profiles request contract and submits no more than 100) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 211 Tm
+(profiles per import request.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 192 Tm
+(GET /api/scores) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 171 Tm
+(Lists persisted score runs. Filters are combined with logical AND. The) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 159 Tm
+(search filter matches candidate_label, job_role, and overall_summary.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 140 Tm
+(Query parameter | Type | Default | Constraints and behavior) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 128 Tm
+(limit | integer | 50 | Minimum 1; maximum 200.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 116 Tm
+(offset | integer | 0 | Minimum 0.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 104 Tm
+(search | string | null | Case handling is delegated to SQLite LIKE; surrounding whitespace is) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 92 Tm
+(ignored.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 80 Tm
+(red_flag_status | string | null | Stored red-flag status to match, normally pass, review, or) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 68 Tm
+(fail.) Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 16 0 R >>
+endobj
+16 0 obj
+<< /Length 4347 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(human_review_status | string | null | Stored review status to match: pending, approved,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(rejected, or overridden.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 714 Tm
+(min_score | number | null | Inclusive minimum composite score; 0-100.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 702 Tm
+(max_score | number | null | Inclusive maximum composite score; 0-100.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 690 Tm
+(has_excluded_attributes | boolean | null | true returns runs with detected excluded attributes;) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 678 Tm
+(false returns runs without any.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 666 Tm
+(sort_by | string | id | One of id, composite_score, created_at, or candidate_label.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 654 Tm
+(sort_order | string | desc | asc or desc.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 635 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 616 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 606 Tm
+(  "results": ["ScoreResult objects"],) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 596 Tm
+(  "total": 42,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 586 Tm
+(  "limit": 50,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 576 Tm
+(  "offset": 0,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 566 Tm
+(  "filters": {) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 556 Tm
+(    "search": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 546 Tm
+(    "red_flag_status": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 536 Tm
+(    "human_review_status": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 526 Tm
+(    "min_score": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 516 Tm
+(    "max_score": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 506 Tm
+(    "has_excluded_attributes": null,) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 496 Tm
+(    "sort_by": "id",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 486 Tm
+(    "sort_order": "desc") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 476 Tm
+(  }) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 466 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 449 Tm
+(total is the count before pagination but after all filters. The results) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 437 Tm
+(items use the same shape as ScoreResult <#scoreresult>.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 418 Tm
+(GET /api/scores/analytics) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 397 Tm
+(Returns aggregate metrics for every persisted score run. It accepts no query) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 385 Tm
+(parameters.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 366 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 347 Tm
+(Field | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 335 Tm
+(total_candidates | integer | Total number of persisted runs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 323 Tm
+(composite_score_stats | object | avg, median, min, and max numeric composite scores. All are 0.0) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 311 Tm
+(when no runs exist.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 299 Tm
+(red_flag_breakdown | object | Counts keyed by pass, review, and fail.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 287 Tm
+(human_review_breakdown | object | Counts keyed by review status.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 275 Tm
+(excluded_attributes_counts | object | Count of each detected excluded-attribute label.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 263 Tm
+(score_buckets | object | Counts in 0_to_20, 21_to_40, 41_to_60, 61_to_80, and 81_to_100.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 244 Tm
+(GET /api/scores/export) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 223 Tm
+(Downloads up to 10,000 filtered score runs. Export results are always ordered) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 211 Tm
+(by score ID descending. The has_excluded_attributes list filter is not) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 199 Tm
+(available on this route.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 180 Tm
+(Query parameter | Type | Default | Constraints and behavior) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 168 Tm
+(format | string | csv | csv or json.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 156 Tm
+(search | string | null | Same matching behavior as GET /api/scores.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 144 Tm
+(red_flag_status | string | null | Same filtering behavior as GET /api/scores.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 132 Tm
+(human_review_status | string | null | Same filtering behavior as GET /api/scores.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 120 Tm
+(min_score | number | null | Inclusive composite-score lower bound.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 108 Tm
+(max_score | number | null | Inclusive composite-score upper bound.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 89 Tm
+(Success responses \(200 OK\):) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 70 Tm
+(format | Content type | Download name | Body) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 18 0 R >>
+endobj
+18 0 obj
+<< /Length 3838 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(csv | text/csv | candidate_scores_export.csv | Header row followed by one row per score.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(Includes review fields and flattened red-flag data.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 714 Tm
+(json | application/json | candidate_scores_export.json | JSON array of ScoreResult) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 702 Tm
+(<#scoreresult>-shaped score runs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 683 Tm
+(The download filename is supplied through the Content-Disposition response) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 671 Tm
+(header.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 652 Tm
+(GET /api/scores/compare) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 631 Tm
+(Compares the selected persisted score runs. Candidate results follow the order) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 619 Tm
+(of the requested IDs when those IDs exist.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 600 Tm
+(Query parameter | Type | Required | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 588 Tm
+(ids | string | Yes | Comma-separated integer score IDs, for example 1,2,5.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 569 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 550 Tm
+(Field | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 538 Tm
+(candidates | array of ScoreResult | Score runs found for the supplied IDs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 526 Tm
+(dimension_averages | object | Average score by dimension key, rounded to one decimal.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 514 Tm
+(highest_scoring_candidate | string or null | Candidate label with the highest composite score.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 502 Tm
+(lowest_scoring_candidate | string or null | Candidate label with the lowest composite score.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 490 Tm
+(red_flags_summary | object | Counts keyed by pass, review, and fail.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 471 Tm
+(Error responses:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 452 Tm
+(Status | When returned) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 440 Tm
+(400 | ids is not a comma-separated integer list or contains no IDs.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 428 Tm
+(404 | None of the requested IDs exist.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 409 Tm
+(GET /api/scores/{score_id}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 388 Tm
+(Returns one persisted scoring run in full detail.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 369 Tm
+(Path parameter | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 357 Tm
+(score_id | integer | SQLite score-run ID.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 338 Tm
+(Success response \(200 OK\): a ScoreResult <#scoreresult> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 319 Tm
+(Error response: 404 Not Found with { "detail": "Score not found" } when) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 307 Tm
+(the ID is absent.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 288 Tm
+(PATCH /api/scores/{score_id}/review) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 267 Tm
+(Records a human-review outcome and notes for an existing score run. The server) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 255 Tm
+(sets human_review.reviewed_at to the update time.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 236 Tm
+(Path parameter | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 224 Tm
+(score_id | integer | SQLite score-run ID.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 205 Tm
+(Request body:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 186 Tm
+(Field | Type | Required | Constraints) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 174 Tm
+(status | string | Yes | One of pending, approved, rejected, or overridden.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 162 Tm
+(notes | string | No | Defaults to ""; maximum 1,000 characters.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 143 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 124 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 114 Tm
+(  "status": "approved",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 104 Tm
+(  "notes": "Reviewer confirmed the evidence is appropriate for this prototype run.") Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 94 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 77 Tm
+(Success response \(200 OK\): the updated ScoreResult <#scoreresult>.) Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 20 0 R >>
+endobj
+20 0 obj
+<< /Length 3601 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(Error responses:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 719 Tm
+(Status | When returned) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 707 Tm
+(404 | The score-run ID does not exist.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 695 Tm
+(422 | The body has an invalid review status or notes exceed 1,000 characters.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 676 Tm
+(DELETE /api/scores/{score_id}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 655 Tm
+(Deletes one persisted score run permanently.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 636 Tm
+(Path parameter | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 624 Tm
+(score_id | integer | SQLite score-run ID.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 605 Tm
+(Success response \(200 OK\):) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 586 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 576 Tm
+(  "message": "Score run deleted",) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 566 Tm
+(  "id": 42) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 556 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 539 Tm
+(Error response: 404 Not Found with) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 527 Tm
+({ "detail": "Score run not found" } when the ID is absent.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 508 Tm
+(POST /api/scores/batch) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 487 Tm
+(Creates an in-memory batch job and queues profile scoring as a FastAPI) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 475 Tm
+(background task. Each successful item is persisted as an individual score run.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 456 Tm
+(Request body:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 437 Tm
+(Field | Type | Required | Constraints) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 425 Tm
+(profiles | array of CandidateProfileInput | Yes | At least 1 and at most 20 profile objects.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 406 Tm
+(Example:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 387 Tm
+({) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 377 Tm
+(  "profiles": [) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 367 Tm
+(    { "candidate_label": "sample_001", "cv_claims": "Developer" },) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 357 Tm
+(    { "candidate_label": "sample_002", "cv_claims": "Analyst" }) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 347 Tm
+(  ]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 337 Tm
+(}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 320 Tm
+(Success response \(200 OK\): a BatchJobStatus <#batchjobstatus> object. A) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 308 Tm
+(new response starts with status: "processing" and empty results; poll the) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 296 Tm
+(batch-status endpoint for completion.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 277 Tm
+(Errors: 422 Unprocessable Entity when profiles is outside the allowed size) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 265 Tm
+(or an item does not satisfy CandidateProfileInput.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 246 Tm
+(GET /api/scores/batch/{batch_id}) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 225 Tm
+(Returns the latest state of an in-memory batch job.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 206 Tm
+(Path parameter | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 194 Tm
+(batch_id | string | Eight-character ID returned when the batch was created.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 175 Tm
+(BatchJobStatus) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 154 Tm
+(Field | Type | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 142 Tm
+(batch_id | string | Batch identifier.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 130 Tm
+(status | string | processing, completed, or failed.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 118 Tm
+(total_items | integer | Number of profiles accepted in the request.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 106 Tm
+(completed_items | integer | Number of successfully scored profiles.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 94 Tm
+(failed_items | integer | Number of profiles that failed scoring.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 82 Tm
+(results | array | Completed/failed item records accumulated as processing proceeds.) Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 22 0 R >>
+endobj
+22 0 obj
+<< /Length 4044 >>
+stream
+BT
+/F1 9 Tf
+1 0 0 1 54 738 Tm
+(Each item record has candidate_label, status \(completed or failed\),) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 726 Tm
+(score_result \(a ScoreResult or null\), and error \(a string or null\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 714 Tm
+(A batch is marked completed if at least one item succeeds; it is marked) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 702 Tm
+(failed only when every item fails.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 683 Tm
+(Success response \(200 OK\): a BatchJobStatus <#batchjobstatus> object.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 664 Tm
+(Error response: 404 Not Found with) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 652 Tm
+({ "detail": "Batch job not found" } when the ID is unknown. Batch state is) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 640 Tm
+(not durable and is lost when the application process restarts.) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 621 Tm
+(Non-API Routes) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 596 Tm
+(Path | Response | Purpose) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 584 Tm
+(/ | Static HTML application | Minimal browser test interface served from static/.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 572 Tm
+(/docs | Swagger UI | Interactive FastAPI documentation.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 560 Tm
+(/redoc | ReDoc | Alternative generated documentation interface.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 548 Tm
+(/openapi.json | OpenAPI JSON | Machine-readable API schema.) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 529 Tm
+(Operational Notes) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 504 Tm
+(- Configure the local model with OLLAMA_MODEL; the placeholder value) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 492 Tm
+(REPLACE_WITH_YOUR_MODEL intentionally prevents scoring.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 480 Tm
+(- GET /api/health is the recommended readiness check before calling score) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 468 Tm
+(endpoints.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 456 Tm
+(- The API is configured for local prototype use. It does not implement) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 444 Tm
+(authentication, rate limiting, durable background-job storage, or) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 432 Tm
+(production-grade error handling.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 408 Tm
+(Source: docs/project_report.md) Tj
+ET
+BT
+/F2 16 Tf
+1 0 0 1 54 393 Tm
+(Behavior Scoring ? Comprehensive Project Report) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 364 Tm
+(> Project: Candidate Social Media Behavior Scoring System) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 352 Tm
+(> Version: 0.2.0) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 340 Tm
+(> Branch: API) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 328 Tm
+(> Author: Adrie \(Internship ? Semester Pendek\)) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 316 Tm
+(> Date: July 27, 2026) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 304 Tm
+(> Stack: Python 3.11 ∑ FastAPI ∑ Ollama \(Local LLM\) ∑ SQLite ∑ Playwright) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 271 Tm
+(1. Executive Summary) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 246 Tm
+(This repository contains an internal R&D candidate screening & behavioral evaluation system.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 234 Tm
+(Candidate social media profile text \(from consented, synthetic, or scraped sources\) is evaluated) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 222 Tm
+(against a deterministic, weighted rubric using a local LLM via Ollama.) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 203 Tm
+(Core Pillars) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 189 Tm
+(- Privacy-First: 100% local processing via Ollama ? zero candidate data leaves your) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 177 Tm
+(machine.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 165 Tm
+(- Fairness Protection: 7 excluded protected attributes \(religion, ethnicity, politics,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 153 Tm
+(marital status, health, sexual orientation, age\) are ignored during scoring via prompt) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 141 Tm
+(engineering AND a deterministic Python keyword backstop.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 129 Tm
+(- Auditable: Every scoring run records the exact model used, rubric version, rubric) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 117 Tm
+(content hash, raw LLM output, and timestamp.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 105 Tm
+(- Human-in-the-Loop: All AI scores default to human_review_status = "pending" requiring) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 93 Tm
+(recruiter review.) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 24 0 R >>
+endobj
+24 0 obj
+<< /Length 4672 >>
+stream
+BT
+/F2 13 Tf
+1 0 0 1 54 738 Tm
+(2. System Architecture) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 713 Tm
+(graph TB) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 703 Tm
+(    subgraph Frontend) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 693 Tm
+(        UI["Static Test UI<br/>\(http://127.0.0.1:8000\)"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 683 Tm
+(    end) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 663 Tm
+(    subgraph Backend["FastAPI Backend \(API Branch\)"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 653 Tm
+(        MAIN["app/main.py<br/>15+ REST API Endpoints"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 643 Tm
+(        SCORING["app/scoring.py<br/>Prompt Builder + JSON Parser"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 633 Tm
+(        RUBRIC["app/rubric.py<br/>Rubric Dimensions & Weights"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 623 Tm
+(        AUTH["app/auth.py<br/>Authentication Middleware"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 613 Tm
+(        DB["app/db.py<br/>SQLite Storage Layer"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 603 Tm
+(        SCHEMAS["app/schemas.py<br/>Pydantic Request/Response Models"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 593 Tm
+(    end) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 573 Tm
+(    subgraph Integration) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 563 Tm
+(        BRIDGE["scripts/scraper_bridge.py<br/>Playwright Scraper Bridge"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 553 Tm
+(        E2E["tests/e2e/<br/>Playwright E2E Test Suite"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 543 Tm
+(    end) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 523 Tm
+(    subgraph External) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 513 Tm
+(        OLLAMA["Ollama LLM Server<br/>localhost:11434"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 503 Tm
+(        SQLITE["SQLite Database<br/>data/scores.db"]) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 493 Tm
+(    end) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 473 Tm
+(    UI -->|HTTP| MAIN) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 463 Tm
+(    BRIDGE -->|POST /api/candidates/import| MAIN) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 453 Tm
+(    MAIN --> SCORING) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 443 Tm
+(    SCORING --> RUBRIC) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 433 Tm
+(    SCORING -->|httpx async| OLLAMA) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 423 Tm
+(    MAIN --> DB) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 413 Tm
+(    DB --> SQLITE) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 403 Tm
+(    MAIN --> SCHEMAS) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 393 Tm
+(    MAIN --> AUTH) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 383 Tm
+(    E2E -->|Playwright APIRequestContext| MAIN) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 352 Tm
+(3. Implemented API Contract) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 327 Tm
+(Category | Endpoint | Method | Description) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 315 Tm
+(System | /api/health | GET | Reports backend, Ollama server, and local LLM model reachability.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 303 Tm
+( | /api/rubric | GET | Returns rubric dimensions, weights, red flag rules, and content hash.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 291 Tm
+(Auth | /api/auth/token | POST | Issues Bearer access token for valid client credentials.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 279 Tm
+(Scoring | /api/score | POST | Scores a candidate profile via Ollama and saves result to SQLite.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 267 Tm
+( | /api/scores | GET | Returns paginated scores with text search, score range, and red-flag) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 255 Tm
+(filters.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 243 Tm
+( | /api/scores/{id} | GET | Fetches complete scoring breakdown and raw LLM output by ID.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 231 Tm
+( | /api/scores/{id} | DELETE | Removes a candidate score entry.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 219 Tm
+(Batch | /api/scores/batch | POST | Enqueues a batch of profiles for background scoring.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 207 Tm
+( | /api/scores/batch/{batch_id} | GET | Checks processing status and item results of a batch) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 195 Tm
+(job.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 183 Tm
+(Import | /api/candidates/import | POST | Bulk-imports scraped candidate profiles into SQLite.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 171 Tm
+(Webhooks | /api/webhooks | POST | Registers webhook endpoint URLs for completion event) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 159 Tm
+(notifications.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 147 Tm
+(Review | /api/scores/{id}/review | PATCH | Updates recruiter audit status \(approved, rejected,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 135 Tm
+(overridden\) and notes.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 123 Tm
+(Analytics | /api/scores/analytics | GET | Returns aggregated composite score stats, red flags,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 111 Tm
+(and score buckets.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 99 Tm
+( | /api/scores/export | GET | Exports scored candidate data as CSV or JSON download.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 87 Tm
+( | /api/scores/compare | GET | Side-by-side comparison of candidate profiles with dimension) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 75 Tm
+(averages.) Tj
+ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> /F2 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >> >> >> /Contents 26 0 R >>
+endobj
+26 0 obj
+<< /Length 1545 >>
+stream
+BT
+/F2 13 Tf
+1 0 0 1 54 724 Tm
+(4. Test Verification Summary) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 699 Tm
+(The test suite contains 88 automated tests spanning unit, contract integration, and Playwright) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 687 Tm
+(E2E tests:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 668 Tm
+(# Run the test suite:) Tj
+ET
+BT
+/F1 8 Tf
+1 0 0 1 54 658 Tm
+(venv\\Scripts\\python.exe -m pytest) Tj
+ET
+BT
+/F2 10 Tf
+1 0 0 1 54 641 Tm
+(Test Breakdown) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 627 Tm
+(- Playwright E2E Suite \(tests/e2e/\): 18 tests \(APIRequestContext testing health,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 615 Tm
+(scoring, auth token issuance, candidate import, webhooks\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 603 Tm
+(- Backend Feature & Contract Suite \(tests/integration/\): 18 tests \(SQLite persistence,) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 591 Tm
+(analytics, filters, pagination, export\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 579 Tm
+(- Rubric & Scoring Pipeline Unit Suite \(tests/unit/\): 52 tests \(dimension weight) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 567 Tm
+(validation, non-numeric fallback handling, excluded-attribute keyword backstop\).) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 548 Tm
+(Result: 88 passed \(100% pass rate\).) Tj
+ET
+BT
+/F2 13 Tf
+1 0 0 1 54 515 Tm
+(5. Single Workspace Source Control Workflow) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 490 Tm
+(All work is maintained directly on the API branch:) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 478 Tm
+(- No extra Git worktrees or temporary branches cluttering Source Control.) Tj
+ET
+BT
+/F1 9 Tf
+1 0 0 1 54 466 Tm
+(- Direct commit and push to origin/API.) Tj
+ET
+endstream
+endobj
+xref
+0 27
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000196 00000 n 
+0000000435 00000 n 
+0000004948 00000 n 
+0000005187 00000 n 
+0000009612 00000 n 
+0000009851 00000 n 
+0000014790 00000 n 
+0000015030 00000 n 
+0000018833 00000 n 
+0000019074 00000 n 
+0000022806 00000 n 
+0000023047 00000 n 
+0000027381 00000 n 
+0000027622 00000 n 
+0000032022 00000 n 
+0000032263 00000 n 
+0000036154 00000 n 
+0000036395 00000 n 
+0000040049 00000 n 
+0000040290 00000 n 
+0000044387 00000 n 
+0000044628 00000 n 
+0000049353 00000 n 
+0000049594 00000 n 
+trailer
+<< /Size 27 /Root 1 0 R >>
+startxref
+51192
+%%EOF

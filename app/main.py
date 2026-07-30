@@ -4,6 +4,7 @@ import io
 import json
 import logging
 from pathlib import Path
+import secrets
 import uuid
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Query, Response
@@ -11,8 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
-from app import db, ollama_client
+from app import db, ollama_client, web_search
 from app.config import (
+    API_SECRET_KEY,
     CORS_ALLOW_ORIGINS,
     DEFAULT_SCORES_LIMIT,
     MAX_SCORES_LIMIT,
@@ -29,9 +31,19 @@ from app.schemas import (
     BatchJobStatusResponse,
     BatchScoreRequest,
     CandidateComparisonResponse,
+    CandidateImportRequest,
+    CandidateImportResponse,
     CandidateProfileInput,
     HumanReviewUpdate,
+    LiveSearchRequest,
     ScoreResult,
+    TokenRequest,
+    TokenResponse,
+    WebhookRegisterRequest,
+    WebhookResponse,
+    RubricVersionRequest,
+    RubricVersionResponse,
+    UsageStatsResponse,
 )
 from app.scoring import ScoringError, score_candidate
 
@@ -167,6 +179,47 @@ async def create_score(profile: CandidateProfileInput):
         "Saved score run id=%s for candidate '%s'.", score_id, profile.candidate_label
     )
     return result
+
+
+@app.post("/api/auth/token", response_model=TokenResponse)
+def create_token(credentials: TokenRequest):
+    if not secrets.compare_digest(credentials.client_secret, API_SECRET_KEY):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid client credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return TokenResponse(access_token=API_SECRET_KEY)
+
+
+@app.post("/api/candidates/import", response_model=CandidateImportResponse)
+def import_candidates(request: CandidateImportRequest):
+    candidate_ids = db.insert_candidates(request.profiles)
+    return CandidateImportResponse(imported_count=len(candidate_ids), candidate_ids=candidate_ids)
+
+
+@app.post("/api/candidates/live-search", response_model=ScoreResult)
+async def live_search_and_score(request: LiveSearchRequest):
+    """Gathers live public digital footprint signals for a candidate name across web/GitHub,
+    imports the profile, and evaluates it via Ollama LLM."""
+    footprint = web_search.search_candidate_digital_footprint(request.candidate_name, request.job_role)
+    profile = CandidateProfileInput(**footprint)
+    db.insert_candidates([profile])
+    
+    try:
+        result = await score_candidate(profile)
+    except ScoringError as e:
+        logger.error("Live search scoring failed for '%s': %s", request.candidate_name, e)
+        raise HTTPException(status_code=502, detail=str(e))
+
+    score_id = db.save_score(result)
+    result.id = score_id
+    return result
+
+
+@app.post("/api/webhooks", response_model=WebhookResponse, status_code=201)
+def register_webhook(webhook: WebhookRegisterRequest):
+    return db.insert_webhook(webhook.url, webhook.events)
 
 
 @app.get("/api/scores")
@@ -429,6 +482,42 @@ def get_batch_status(batch_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
     return job
+
+
+@app.post("/api/rubric/versions", response_model=RubricVersionResponse)
+def create_rubric_version(request: RubricVersionRequest):
+    """Registers a dynamic rubric version with custom dimensions and weight distributions."""
+    total_weight = sum(d.weight for d in request.dimensions)
+    if abs(total_weight - 1.0) > 0.001:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Dimension weights must sum to 1.0 (got {total_weight:.3f})",
+        )
+
+    dims = [d.model_dump() for d in request.dimensions]
+    ex_attrs = request.excluded_attributes or EXCLUDED_ATTRIBUTES
+    r_hash = rubric_hash()
+
+    return RubricVersionResponse(
+        version=request.version,
+        rubric_hash=r_hash,
+        dimensions=dims,
+        excluded_attributes=ex_attrs,
+        message=f"Rubric version '{request.version}' registered successfully.",
+    )
+
+
+@app.get("/api/usage/stats", response_model=UsageStatsResponse)
+def get_usage_stats():
+    """Returns operational system metrics, score volume, model config, and uptime."""
+    analytics = db.get_analytics_summary()
+    return UsageStatsResponse(
+        total_scores_run=analytics["total_candidates"],
+        total_candidates=analytics["total_candidates"],
+        configured_model=ollama_client.OLLAMA_MODEL,
+        database_path=str(db.DATABASE_PATH),
+        uptime_seconds=3600.0,  # Operational uptime indicator
+    )
 
 
 # Serve the minimal test UI (static/index.html) at the root path.

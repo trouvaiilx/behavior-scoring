@@ -52,6 +52,10 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
         Batch
       </button>
+      <button class="tab-btn" data-tab="tab-scrape" id="tab-btn-scrape" role="tab" aria-selected="false" aria-controls="tab-scrape">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Social &amp; Scrape
+      </button>
     </nav>
   </div>
 
@@ -329,6 +333,54 @@
           </div>
         </div>
         <div id="batch-status" class="batch-status-area" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- ==================== SOCIAL & SCRAPE TAB ==================== -->
+    <div class="tab-content" id="tab-scrape" role="tabpanel" aria-labelledby="tab-btn-scrape">
+      <div class="glass-panel main-panel">
+        <h2 class="panel-title">Social Media &amp; Web Scraper Import</h2>
+        <p class="panel-desc">Import scraped candidate social media profiles (JSON format from Playwright / iSpy / Web Search) or perform a quick social profile check.</p>
+        
+        <div class="card-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <!-- Left: Scraper File Upload -->
+          <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03);">
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">📂 Scraper JSON Upload</h3>
+            <p class="muted-text" style="font-size: 0.85rem;">Upload scraped profile JSON output from Playwright scrapers.</p>
+            
+            <label for="scrape-file-input" style="margin-top: 15px;">
+              <span class="label-text">Select JSON Scraper File</span>
+              <input type="file" id="scrape-file-input" accept=".json" style="padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1fr solid rgba(255,255,255,0.1); width: 100%; color: #fff;" />
+            </label>
+
+            <button class="btn btn-primary" id="scrape-upload-btn" style="margin-top: 15px; width: 100%;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Import Scraped Profiles to API
+            </button>
+            <div id="scrape-upload-result" style="margin-top: 15px; font-size: 0.85rem;"></div>
+          </div>
+
+          <!-- Right: Live Internet & Social Media Footprint Search Form -->
+          <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03);">
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">🌐 Live Internet &amp; Social Footprint Search</h3>
+            <p class="muted-text" style="font-size: 0.85rem;">Enter a candidate name or social handle. The system automatically fetches public web articles, GitHub profiles, and digital footprint signals in real-time.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
+              <div>
+                <label class="label-text" for="live-search-name">Candidate Name / Social Handle</label>
+                <input type="text" id="live-search-name" placeholder="e.g. torvalds, @alex_dev, or Linus Torvalds" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+              </div>
+              <div>
+                <label class="label-text" for="live-search-role">Target Job Role</label>
+                <input type="text" id="live-search-role" placeholder="e.g. Linux Kernel Developer or Software Engineer" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+              </div>
+              <button class="btn btn-primary" id="live-search-submit-btn" style="width: 100%; margin-top: 5px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                🌐 Search Internet &amp; Score Digital Footprint
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>

@@ -6,13 +6,13 @@ output, and timestamp — this is the minimal audit trail: enough to trace
 back any score to exactly what produced it.
 """
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 import json
 from pathlib import Path
 import sqlite3
 
 from app.config import DATABASE_PATH
-from app.schemas import ScoreResult
+from app.schemas import CandidateProfileInput, ScoreResult
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS scores (
@@ -36,11 +36,29 @@ CREATE TABLE IF NOT EXISTS scores (
 );
 """
 
-# Batch jobs used to live only in an in-memory dict in app/main.py, which
-# meant a server restart silently lost all in-flight/completed batch
-# history, and the dict grew unbounded for the life of the process.
-# Persisting them here fixes both: state survives restarts, and
-# cleanup_old_batch_jobs() below gives callers a way to bound growth.
+WEBHOOKS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS webhooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    url TEXT NOT NULL,
+    events_json TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+"""
+
+CANDIDATES_SCHEMA = """
+CREATE TABLE IF NOT EXISTS candidates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    candidate_label TEXT NOT NULL,
+    job_role TEXT NOT NULL DEFAULT '',
+    cv_claims TEXT NOT NULL DEFAULT '',
+    profile_about TEXT NOT NULL DEFAULT '',
+    posts_sample TEXT NOT NULL DEFAULT '',
+    comments_sample TEXT NOT NULL DEFAULT '',
+    network_notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL
+);
+"""
+
 BATCH_SCHEMA = """
 CREATE TABLE IF NOT EXISTS batch_jobs (
     batch_id TEXT PRIMARY KEY,
@@ -71,6 +89,8 @@ def _connect() -> sqlite3.Connection:
 def init_db() -> None:
     with _connect() as conn:
         conn.execute(SCHEMA)
+        conn.execute(WEBHOOKS_SCHEMA)
+        conn.execute(CANDIDATES_SCHEMA)
         conn.execute(BATCH_SCHEMA)
         # Migrations for DBs created before these columns existed.
         existing_cols = {
@@ -100,6 +120,62 @@ def init_db() -> None:
             conn.execute(
                 "ALTER TABLE scores ADD COLUMN reviewed_at TEXT NOT NULL DEFAULT ''"
             )
+
+
+def insert_webhook(url: str, events: list[str]) -> dict:
+    created_at = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        cur = conn.execute(
+            "INSERT INTO webhooks (url, events_json, created_at) VALUES (?, ?, ?)",
+            (url, json.dumps(events), created_at),
+        )
+        return {
+            "id": cur.lastrowid,
+            "url": url,
+            "events": events,
+            "created_at": created_at,
+        }
+
+
+def list_webhooks() -> list[dict]:
+    with _connect() as conn:
+        rows = conn.execute("SELECT * FROM webhooks ORDER BY id DESC").fetchall()
+        return [
+            {
+                "id": row["id"],
+                "url": row["url"],
+                "events": json.loads(row["events_json"]),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+
+def insert_candidates(profiles: list[CandidateProfileInput]) -> list[int]:
+    created_at = datetime.now(timezone.utc).isoformat()
+    candidate_ids = []
+    with _connect() as conn:
+        for profile in profiles:
+            cur = conn.execute(
+                """
+                INSERT INTO candidates (
+                    candidate_label, job_role, cv_claims, profile_about,
+                    posts_sample, comments_sample, network_notes, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    profile.candidate_label,
+                    profile.job_role,
+                    profile.cv_claims,
+                    profile.profile_about,
+                    profile.posts_sample,
+                    profile.comments_sample,
+                    profile.network_notes,
+                    created_at,
+                ),
+            )
+            candidate_ids.append(cur.lastrowid)
+    return candidate_ids
 
 
 def save_score(result: ScoreResult) -> int:

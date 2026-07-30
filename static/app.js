@@ -1001,6 +1001,96 @@ async function pollBatch(batchId, totalItems) {
 }
 
 // ================================================================
+// ================================================================
+// SOCIAL & SCRAPE TAB HANDLERS
+// ================================================================
+const scrapeFileInput  = document.getElementById("scrape-file-input");
+const scrapeUploadBtn  = document.getElementById("scrape-upload-btn");
+const scrapeResultBox  = document.getElementById("scrape-upload-result");
+
+if (scrapeUploadBtn) {
+  scrapeUploadBtn.addEventListener("click", async () => {
+    if (!scrapeFileInput.files || scrapeFileInput.files.length === 0) {
+      showToast("Please select a scraped JSON file first.", "error");
+      return;
+    }
+
+    const file = scrapeFileInput.files[0];
+    try {
+      const text = await file.text();
+      const payload = JSON.parse(text);
+      const profiles = Array.isArray(payload) ? payload : (payload.profiles || [payload]);
+
+      scrapeResultBox.innerHTML = `<span class="muted-text">Uploading ${profiles.length} profile(s)...</span>`;
+      const res = await fetch("/api/candidates/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profiles }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Import failed");
+      }
+
+      const data = await res.json();
+      scrapeResultBox.innerHTML = `<span style="color:#10b981;">✓ Imported ${data.imported_count} candidates successfully (IDs: ${data.candidate_ids.join(", ")})</span>`;
+      showToast(`Imported ${data.imported_count} candidate profiles!`, "success");
+      loadHistory();
+    } catch (e) {
+      scrapeResultBox.innerHTML = `<span style="color:#ef4444;">✗ Error: ${escapeHtml(e.message)}</span>`;
+      showToast(`Import error: ${e.message}`, "error");
+    }
+  });
+}
+
+const liveSearchBtn  = document.getElementById("live-search-submit-btn");
+const liveSearchName = document.getElementById("live-search-name");
+const liveSearchRole = document.getElementById("live-search-role");
+
+if (liveSearchBtn) {
+  liveSearchBtn.addEventListener("click", async () => {
+    const name = liveSearchName.value.trim();
+    const role = liveSearchRole.value.trim();
+
+    if (!name) {
+      showToast("Please enter a candidate name or social handle to search.", "error");
+      return;
+    }
+
+    showToast(`Searching internet & GitHub footprint for '${name}'...`, "info");
+    liveSearchBtn.disabled = true;
+    liveSearchBtn.innerHTML = `<span class="spinner" style="display:inline-block; margin-right:8px;"></span> Searching & Scoring...`;
+
+    try {
+      const res = await fetch("/api/candidates/live-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidate_name: name, job_role: role }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Live search failed");
+      }
+
+      const scoreResult = await res.json();
+      showToast(`Digital footprint analysis complete — score: ${scoreResult.composite_score}/100`, "success");
+      
+      // Switch to Analyze tab and display result
+      document.getElementById("tab-btn-score").click();
+      renderResult(scoreResult);
+      loadHistory();
+    } catch (e) {
+      showToast(`Live Search error: ${e.message}`, "error");
+    } finally {
+      liveSearchBtn.disabled = false;
+      liveSearchBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> 🌐 Search Internet &amp; Score Digital Footprint`;
+    }
+  });
+}
+
+// ================================================================
 // SAMPLE PRESET PRE-FILLING
 // ================================================================
 let loadedSampleProfiles = [];
