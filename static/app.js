@@ -465,11 +465,11 @@ async function loadHistory() {
         <td class="cell-truncate" title="${escapeHtml(r.candidate_label)}"><strong>${escapeHtml(truncate(r.candidate_label, 16))}</strong></td>
         <td class="cell-truncate" title="${escapeHtml(r.job_role || "")}">${escapeHtml(truncate(r.job_role || "—", 14))}</td>
         <td class="cell-truncate" title="${escapeHtml(r.overall_summary || "")}">${escapeHtml(truncate(r.overall_summary || "—", 30))}</td>
-        <td><span class="${cls}">${r.composite_score}</span></td>
-        <td>${badgeHtml(r.red_flag.status)}</td>
-        <td>${badgeHtml(hrStatus)}</td>
-        <td class="meta-text" title="${r.created_at || ""}">${formatTime(r.created_at)}</td>
-        <td>
+        <td style="text-align:center;vertical-align:middle"><span class="${cls}">${r.composite_score}</span></td>
+        <td style="text-align:center;vertical-align:middle">${badgeHtml(r.red_flag.status)}</td>
+        <td style="text-align:center;vertical-align:middle">${badgeHtml(hrStatus)}</td>
+        <td style="text-align:center;vertical-align:middle;white-space:nowrap" class="meta-text" title="${r.created_at || ""}">${formatTime(r.created_at)}</td>
+        <td style="text-align:center;vertical-align:middle">
           <div class="actions-cell">
             <button class="btn btn-ghost btn-xs action-view" data-id="${r.id}" title="View full details" aria-label="View details for run ${r.id}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

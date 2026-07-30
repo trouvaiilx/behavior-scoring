@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="description" content="Internal R&D prototype for candidate social-media behavior scoring using a local LLM via Ollama. Advisory signal only — every result requires human review." />
-<title>Behavior Scoring — Prototype</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Internal R&D prototype for candidate social-media behavior scoring using a local LLM via Ollama. Advisory signal only — every result requires human review." />
+  <title>Behavior Scoring — Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
   <!-- Toast Container -->
@@ -32,28 +37,63 @@
   <!-- Tab Navigation -->
   <div class="tab-nav-wrapper">
     <nav class="tab-nav" id="tab-nav" role="tablist" aria-label="Main navigation">
-      <button class="tab-btn active" data-tab="tab-score" id="tab-btn-score" role="tab" aria-selected="true" aria-controls="tab-score">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <button class="tab-btn active" data-tab="tab-score" id="tab-btn-score" role="tab" aria-selected="true"
+        aria-controls="tab-score">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+        </svg>
         Analyze
       </button>
-      <button class="tab-btn" data-tab="tab-history" id="tab-btn-history" role="tab" aria-selected="false" aria-controls="tab-history">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+      <button class="tab-btn" data-tab="tab-history" id="tab-btn-history" role="tab" aria-selected="false"
+        aria-controls="tab-history">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+          <path d="M12 7v5l4 2" />
+        </svg>
         History
       </button>
-      <button class="tab-btn" data-tab="tab-analytics" id="tab-btn-analytics" role="tab" aria-selected="false" aria-controls="tab-analytics">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+      <button class="tab-btn" data-tab="tab-analytics" id="tab-btn-analytics" role="tab" aria-selected="false"
+        aria-controls="tab-analytics">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <path d="M18 20V10" />
+          <path d="M12 20V4" />
+          <path d="M6 20v-6" />
+        </svg>
         Analytics
       </button>
-      <button class="tab-btn" data-tab="tab-compare" id="tab-btn-compare" role="tab" aria-selected="false" aria-controls="tab-compare">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <button class="tab-btn" data-tab="tab-compare" id="tab-btn-compare" role="tab" aria-selected="false"
+        aria-controls="tab-compare">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
         Compare
       </button>
-      <button class="tab-btn" data-tab="tab-batch" id="tab-btn-batch" role="tab" aria-selected="false" aria-controls="tab-batch">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+      <button class="tab-btn" data-tab="tab-batch" id="tab-btn-batch" role="tab" aria-selected="false"
+        aria-controls="tab-batch">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+          <rect x="8" y="2" width="8" height="4" rx="1" />
+        </svg>
         Batch
       </button>
-      <button class="tab-btn" data-tab="tab-scrape" id="tab-btn-scrape" role="tab" aria-selected="false" aria-controls="tab-scrape">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <button class="tab-btn" data-tab="tab-scrape" id="tab-btn-scrape" role="tab" aria-selected="false"
+        aria-controls="tab-scrape">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="2" y1="12" x2="22" y2="12" />
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+        </svg>
         Social &amp; Scrape
       </button>
     </nav>
@@ -65,18 +105,27 @@
 
       <!-- Ethical Notice -->
       <div class="ethical-notice" role="note">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span><strong>Research prototype.</strong> Use only sample, synthetic, or explicitly consented data. Every score is an advisory signal — a human reviewer must approve before any decision is made.</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          aria-hidden="true">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+        <span><strong>Research prototype.</strong> Use only sample, synthetic, or explicitly consented data. Every score
+          is an advisory signal — a human reviewer must approve before any decision is made.</span>
       </div>
 
       <div class="panel glass-panel">
-        <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div class="panel-header"
+          style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <h2>Analyze a Candidate</h2>
           <div class="sample-preset-container" style="display: flex; align-items: center; gap: 8px;">
-            <label for="sample-preset-select" style="margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; color: var(--text-muted);">
+            <label for="sample-preset-select"
+              style="margin: 0; font-size: 0.85rem; font-weight: 500; white-space: nowrap; color: var(--text-muted);">
               Load Sample Profile:
             </label>
-            <select id="sample-preset-select" class="form-control" style="padding: 6px 12px; font-size: 0.85rem; max-width: 260px;">
+            <select id="sample-preset-select" class="form-control"
+              style="padding: 6px 12px; font-size: 0.85rem; max-width: 260px;">
               <option value="">-- Select Sample Preset --</option>
             </select>
           </div>
@@ -87,7 +136,11 @@
           <!-- Section 1: Identity -->
           <div class="form-section">
             <div class="form-section-title">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                aria-hidden="true">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
               Identity
             </div>
             <div class="form-row">
@@ -96,14 +149,12 @@
                   Candidate Label
                   <span class="required" aria-label="required">*</span>
                 </span>
-                <input type="text" id="candidate_label" name="candidate_label"
-                  placeholder="e.g. sample_001"
+                <input type="text" id="candidate_label" name="candidate_label" placeholder="e.g. sample_001"
                   autocomplete="off" required aria-required="true" />
               </label>
               <label for="job_role">
                 <span class="label-text">Target Job Role <span class="label-hint">(optional)</span></span>
-                <input type="text" id="job_role" name="job_role"
-                  placeholder="e.g. Senior Software Engineer"
+                <input type="text" id="job_role" name="job_role" placeholder="e.g. Senior Software Engineer"
                   autocomplete="off" />
               </label>
             </div>
@@ -112,7 +163,14 @@
           <!-- Section 2: Profile Content -->
           <div class="form-section">
             <div class="form-section-title">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
               Profile Content
             </div>
 
@@ -138,7 +196,10 @@
           <!-- Section 3: Context -->
           <div class="form-section">
             <div class="form-section-title">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
               Context
             </div>
 
@@ -155,14 +216,23 @@
             </label>
           </div>
 
-          <button type="submit" id="submit-btn" class="btn btn-primary btn-glow" style="margin-top: 8px; align-self: flex-start;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <button type="submit" id="submit-btn" class="btn btn-primary btn-glow"
+            style="margin-top: 8px; align-self: flex-start;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
             Analyze Candidate
           </button>
         </form>
 
         <div id="error-box" class="error-box" hidden role="alert">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
           <span id="error-text"></span>
         </div>
       </div>
@@ -183,15 +253,29 @@
           <h2>Scoring History</h2>
           <div class="header-actions">
             <button class="btn btn-outline btn-sm" id="export-csv-btn" title="Export current filter results as CSV">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               CSV
             </button>
             <button class="btn btn-outline btn-sm" id="export-json-btn" title="Export current filter results as JSON">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
               JSON
             </button>
             <button class="btn btn-accent btn-sm" id="refresh-history" title="Refresh results">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
               Refresh
             </button>
           </div>
@@ -201,7 +285,8 @@
         <div class="filters-bar" id="filters-bar" role="search">
           <div class="filter-group">
             <label for="filter-search" class="sr-only">Search</label>
-            <input type="text" id="filter-search" class="filter-input" placeholder="Search label, role, summary…" aria-label="Search by label, role, or summary" />
+            <input type="text" id="filter-search" class="filter-input" placeholder="Search label, role, summary…"
+              aria-label="Search by label, role, or summary" />
           </div>
           <div class="filter-group">
             <label for="filter-red-flag" class="sr-only">Red flag status</label>
@@ -253,11 +338,11 @@
                 <th style="width:120px">Label</th>
                 <th style="width:100px">Job Role</th>
                 <th>Summary</th>
-                <th style="width:70px">Score</th>
-                <th style="width:72px">Red Flag</th>
-                <th style="width:78px">Review</th>
-                <th style="width:120px">Time</th>
-                <th style="width:96px">Actions</th>
+                <th style="width:70px;text-align:center">Score</th>
+                <th style="width:88px;text-align:center">Red Flag</th>
+                <th style="width:100px;text-align:center">Review</th>
+                <th style="width:136px;text-align:center">Time</th>
+                <th style="width:108px;text-align:center">Actions</th>
               </tr>
             </thead>
             <tbody id="history-tbody"></tbody>
@@ -272,7 +357,11 @@
         <div class="panel-header">
           <h2>Analytics Dashboard</h2>
           <button class="btn btn-accent btn-sm" id="refresh-analytics-btn" title="Refresh analytics">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              aria-hidden="true">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
             Refresh
           </button>
         </div>
@@ -323,11 +412,19 @@
           </label>
           <div style="display: flex; gap: 10px; align-items: center;">
             <button class="btn btn-primary" id="batch-submit-btn">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
               Start Batch Analysis
             </button>
             <button type="button" class="btn btn-secondary" id="load-sample-batch-btn">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
               Pre-fill with Sample Profiles
             </button>
           </div>
@@ -340,21 +437,28 @@
     <div class="tab-content" id="tab-scrape" role="tabpanel" aria-labelledby="tab-btn-scrape">
       <div class="glass-panel main-panel">
         <h2 class="panel-title">Social Media &amp; Web Scraper Import</h2>
-        <p class="panel-desc">Import scraped candidate social media profiles (JSON format from Playwright / iSpy / Web Search) or perform a quick social profile check.</p>
-        
+        <p class="panel-desc">Import scraped candidate social media profiles (JSON format from Playwright / iSpy / Web
+          Search) or perform a quick social profile check.</p>
+
         <div class="card-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <!-- Left: Scraper File Upload -->
           <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03);">
             <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">📂 Scraper JSON Upload</h3>
-            <p class="muted-text" style="font-size: 0.85rem;">Upload scraped profile JSON output from Playwright scrapers.</p>
-            
+            <p class="muted-text" style="font-size: 0.85rem;">Upload scraped profile JSON output from Playwright
+              scrapers.</p>
+
             <label for="scrape-file-input" style="margin-top: 15px;">
               <span class="label-text">Select JSON Scraper File</span>
-              <input type="file" id="scrape-file-input" accept=".json" style="padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1fr solid rgba(255,255,255,0.1); width: 100%; color: #fff;" />
+              <input type="file" id="scrape-file-input" accept=".json"
+                style="padding: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1fr solid rgba(255,255,255,0.1); width: 100%; color: #fff;" />
             </label>
 
             <button class="btn btn-primary" id="scrape-upload-btn" style="margin-top: 15px; width: 100%;">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
               Import Scraped Profiles to API
             </button>
             <div id="scrape-upload-result" style="margin-top: 15px; font-size: 0.85rem;"></div>
@@ -362,20 +466,30 @@
 
           <!-- Right: Live Internet & Social Media Footprint Search Form -->
           <div class="glass-panel" style="padding: 20px; border-radius: 12px; background: rgba(255,255,255,0.03);">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">🌐 Live Internet &amp; Social Footprint Search</h3>
-            <p class="muted-text" style="font-size: 0.85rem;">Enter a candidate name or social handle. The system automatically fetches public web articles, GitHub profiles, and digital footprint signals in real-time.</p>
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #e2e8f0;">🌐 Live Internet &amp; Social Footprint Search
+            </h3>
+            <p class="muted-text" style="font-size: 0.85rem;">Enter a candidate name or social handle. The system
+              automatically fetches public web articles, GitHub profiles, and digital footprint signals in real-time.
+            </p>
 
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
               <div>
                 <label class="label-text" for="live-search-name">Candidate Name / Social Handle</label>
-                <input type="text" id="live-search-name" placeholder="e.g. torvalds, @alex_dev, or Linus Torvalds" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+                <input type="text" id="live-search-name" placeholder="e.g. torvalds, @alex_dev, or Linus Torvalds"
+                  style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
               </div>
               <div>
                 <label class="label-text" for="live-search-role">Target Job Role</label>
-                <input type="text" id="live-search-role" placeholder="e.g. Linux Kernel Developer or Software Engineer" style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
+                <input type="text" id="live-search-role" placeholder="e.g. Linux Kernel Developer or Software Engineer"
+                  style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; width: 100%;" />
               </div>
               <button class="btn btn-primary" id="live-search-submit-btn" style="width: 100%; margin-top: 5px;">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path
+                    d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
                 🌐 Search Internet &amp; Score Digital Footprint
               </button>
             </div>
@@ -386,7 +500,8 @@
   </main>
 
   <!-- ==================== HUMAN REVIEW MODAL ==================== -->
-  <div class="modal-overlay" id="review-modal" hidden role="dialog" aria-modal="true" aria-labelledby="review-modal-heading">
+  <div class="modal-overlay" id="review-modal" hidden role="dialog" aria-modal="true"
+    aria-labelledby="review-modal-heading">
     <div class="modal glass-panel">
       <div class="modal-header">
         <h3 id="review-modal-heading">Human Review</h3>
@@ -405,7 +520,8 @@
         </label>
         <label for="review-notes">
           <span class="label-text">Reviewer Notes</span>
-          <textarea id="review-notes" rows="3" placeholder="e.g. Reviewed and cleared by HR manager on 2026-07-25"></textarea>
+          <textarea id="review-notes" rows="3"
+            placeholder="e.g. Reviewed and cleared by HR manager on 2026-07-25"></textarea>
         </label>
       </div>
       <div class="modal-footer">
@@ -416,7 +532,8 @@
   </div>
 
   <!-- ==================== SCORE DETAIL MODAL ==================== -->
-  <div class="modal-overlay" id="detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="detail-modal-title">
+  <div class="modal-overlay" id="detail-modal" hidden role="dialog" aria-modal="true"
+    aria-labelledby="detail-modal-title">
     <div class="modal modal-lg glass-panel">
       <div class="modal-header">
         <h3 id="detail-modal-title">Score Detail</h3>
@@ -427,14 +544,22 @@
   </div>
 
   <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
-  <div class="modal-overlay" id="confirm-modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-desc">
+  <div class="modal-overlay" id="confirm-modal" hidden role="alertdialog" aria-modal="true"
+    aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-desc">
     <div class="modal glass-panel" style="max-width: 400px;">
       <div class="modal-body" style="gap: 0;">
         <div class="confirm-modal-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+          </svg>
         </div>
         <p class="confirm-modal-title" id="confirm-modal-title">Delete this score run?</p>
-        <p class="confirm-modal-body" id="confirm-modal-desc">This will permanently delete the score run and all its data. This action cannot be undone.</p>
+        <p class="confirm-modal-body" id="confirm-modal-desc">This will permanently delete the score run and all its
+          data. This action cannot be undone.</p>
       </div>
       <div class="modal-footer" style="justify-content: center; gap: 12px;">
         <button class="btn btn-ghost" id="confirm-cancel-btn">Keep it</button>
@@ -445,4 +570,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
